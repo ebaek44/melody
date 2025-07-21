@@ -59,7 +59,7 @@ const Header = () => {
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
           <div className="rounded-full px-1 py-1 backdrop-blur-md bg-background/80 border border-border shadow-lg">
-            <ToggleGroup type="single" value={activePage} onValueChange={(value) => value && setActivePage(value)}>
+            <ToggleGroup type="single" value={activePage} onValueChange={(value: React.SetStateAction<string>) => value && setActivePage(value)}>
               <ToggleGroupItem 
                 value="features"
                 className={cn(
