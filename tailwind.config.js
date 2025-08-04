@@ -1,3 +1,4 @@
+
 export default {
 	darkMode: ["class"],
 	content: [
@@ -90,6 +91,10 @@ export default {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.7' }
 				},
+                blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
 				'gradient-shift': {
 					'0%': { backgroundPosition: '0% 50%' },
 					'50%': { backgroundPosition: '100% 50%' },
@@ -97,6 +102,7 @@ export default {
 				}
 			},
 			animation: {
+                blink: 'blink 2s step-start infinite',
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'float': 'float 6s ease-in-out infinite',
