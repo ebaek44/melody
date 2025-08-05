@@ -152,30 +152,6 @@ const Header = () => {
               >
                 <Crown size={16} className="inline-block mr-1.5" /> Pricing
               </a>
-
-              {/* Add theme toggle for mobile */}
-              <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-sm text-muted-foreground">Theme</span>
-                <div className="flex items-center gap-2">
-                  <Moon
-                    size={16}
-                    className={`${
-                      isDarkMode ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <Switch
-                    checked={!isDarkMode}
-                    onCheckedChange={toggleTheme}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                  <Sun
-                    size={16}
-                    className={`${
-                      !isDarkMode ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                </div>
-              </div>
             </div>
           </div>
         )}
