@@ -20,7 +20,7 @@ const params = new URLSearchParams({
 
 const LOGIN_URL = `https://accounts.spotify.com/authorize?${params.toString()}`;
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
