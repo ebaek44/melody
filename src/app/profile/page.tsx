@@ -1,7 +1,7 @@
 /// Profile page where their personal profile will be and also be able to connect with spotify
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import LoginButton from "@/components/login/loginbutton";
 import BackButton from "@/components/ui/backbutton";
