@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
-  const accessToken = (session as any)?.spotifyAccessToken;
+  const accessToken = session?.spotifyAccessToken;
 
   if (!accessToken) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
