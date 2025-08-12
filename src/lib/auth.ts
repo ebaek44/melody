@@ -2,6 +2,7 @@
 import GoogleProvider from "next-auth/providers/google";
 import SpotifyProvider from "next-auth/providers/spotify";
 import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 
 const scopes = [
   "user-read-email",
@@ -16,7 +17,7 @@ const scopes = [
 const params = new URLSearchParams({ scope: scopes });
 const LOGIN_URL = `https://accounts.spotify.com/authorize?${params.toString()}`;
 
-async function refreshSpotifyAccessToken(token: any) {
+async function refreshSpotifyAccessToken(token: JWT): Promise<JWT> {
   try {
     const body = new URLSearchParams({
       grant_type: "refresh_token",
@@ -98,10 +99,10 @@ export const authOptions: NextAuthOptions = {
       if (token.spotifyAccessToken) {
         // augment the session with Spotify fields
         // add types in next-auth.d.ts if you want type safety
-        (session as any).spotifyAccessToken = token.spotifyAccessToken as string;
-        (session as any).spotifyRefreshToken = token.spotifyRefreshToken as string;
-        (session as any).spotifyExpiresAt = token.spotifyExpiresAt as number;
-        (session as any).spotifyRefreshError = token.spotifyRefreshError;
+        session.spotifyAccessToken = token.spotifyAccessToken;
+        session.spotifyRefreshToken = token.spotifyRefreshToken;
+        session.spotifyExpiresAt = token.spotifyExpiresAt;
+        session.spotifyRefreshError = token.spotifyRefreshError;
       }
       return session;
     },

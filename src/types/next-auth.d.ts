@@ -5,13 +5,15 @@ declare module "next-auth" {
     spotifyAccessToken?: string;
     spotifyRefreshToken?: string;
     spotifyExpiresAt?: number;
+    spotifyRefreshError?: string;
   }
 }
 
 declare module "next-auth/jwt" {
-  interface JWT {
+    interface JWT extends DefaultJWT {
     spotifyAccessToken?: string;
     spotifyRefreshToken?: string;
     spotifyExpiresAt?: number;
+    spotifyRefreshError?: string;
   }
 }
