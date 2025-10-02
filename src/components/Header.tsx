@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { User } from "lucide-react";
+import LogoutButton from "./login/logoutbutton";
 
 const Header = () => {
   /// These two const are used to manipulate the page path and the session token for the user
@@ -179,23 +179,20 @@ const Header = () => {
             />
           </div>
           <div className="rounded-2xl">
-            <Button
-              className="group px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
-              onClick={() => {
-                router.push("/login");
-              }}
-            >
-              {isLoggedIn ? (
-                <User
-                  size={18}
-                  className="transition-colors duration-200 group-hover:text-foreground"
-                />
-              ) : (
+            {isLoggedIn ? (
+              <LogoutButton />
+            ) : (
+              <Button
+                className="group px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
+                onClick={() => {
+                  router.push("/login");
+                }}
+              >
                 <span className="transition-colors duration-200 group-hover:text-foreground">
                   Log in
                 </span>
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
         </div>
       </header>

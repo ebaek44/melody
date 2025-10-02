@@ -1,10 +1,10 @@
-import Node from "@/components/nodemap/node";
+import Node from "@/components/node-map/node";
 
 export default function HomePage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-8">
       <h1 className="text-2xl font-bold mb-6">MusicWeb</h1>
-      
+
       {/* Example usage of your Node component */}
       <Node
         artistName="Radiohead"
