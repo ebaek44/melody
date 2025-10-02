@@ -2,6 +2,7 @@
 import { useState } from "react";
 import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
+import { Button } from "../ui/button";
 
 export default function NodeMap() {
   const sampleArtists: Artist[] = [
@@ -63,13 +64,23 @@ export default function NodeMap() {
   ];
 
   const [middleArtist, setMiddleArtist] = useState(String);
-
+  const [stateTest, setStateTest] = useState("gather");
+  const toggleStateTest = () => {
+    if (stateTest === "gather") {
+      setStateTest("spread");
+    } else {
+      setStateTest("gather");
+    }
+  };
   return (
-    <OrbitDynamic
-      center={sampleArtists[0]}
-      orbit={sampleArtists.slice(1)}
-      state="spread"
-      radius="250px"
-    />
+    <div>
+      <OrbitDynamic
+        center={sampleArtists[0]}
+        orbit={sampleArtists.slice(1)}
+        state={stateTest}
+        radius="250px"
+      />
+      <Button onClick={toggleStateTest}>Test State Switch</Button>
+    </div>
   );
 }

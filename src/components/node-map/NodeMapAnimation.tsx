@@ -10,7 +10,7 @@ export default function OrbitDynamic({
 }: {
   center: Artist;
   orbit: Artist[];
-  state?: "spread" | "gather";
+  state: "spread" | "gather";
   radius?: string;
 }) {
   const n = Math.max(orbit.length, 1);
