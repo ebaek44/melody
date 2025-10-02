@@ -6,15 +6,11 @@ export default function LoginButton({
   provider,
   callbackUrl,
 }: {
-  provider: "google" | "spotify";
+  provider: string;
   callbackUrl?: string;
 }) {
-  const label =
-    provider === "google" ? "Login with Google" : "Connect with Spotify";
-  const color =
-    provider === "google"
-      ? "bg-blue-500 hover:bg-blue-600"
-      : "bg-green-500 hover:bg-green-600";
+  const label = "Connect with Spotify";
+  const color = "bg-green-500 hover:bg-green-600";
 
   const handleLogin = () => {
     if (callbackUrl) {

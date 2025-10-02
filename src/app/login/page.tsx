@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { Loader, Lock } from "lucide-react";
 import LoginButton from "@/components/login/loginbutton";
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,6 @@ import { Button } from "@/components/ui/button";
 export default function LoginPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
-  const { data: session, status } = useSession();
-  const isLoggedIn = status === "authenticated";
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 300);
@@ -44,8 +41,8 @@ export default function LoginPage() {
           Sign in to continue
         </h1>
 
-        {/* Google Login */}
-        <LoginButton provider="google" callbackUrl="/profile" />
+        {/* Spotify login */}
+        <LoginButton provider="spotify" callbackUrl="/" />
 
         {/* Back to Homepage */}
         <div className="mt-4">

@@ -14,7 +14,8 @@ const Header = () => {
   /// These two const are used to manipulate the page path and the session token for the user
   const router = useRouter();
   const { data: session, status } = useSession();
-  const isLoggedIn = status === "authenticated";
+  const hasSpotify = !!session?.spotifyAccessToken;
+  const isLoggedIn = status === "authenticated" && hasSpotify;
   const [activePage, setActivePage] = useState("features");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode
@@ -181,11 +182,7 @@ const Header = () => {
             <Button
               className="group px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
               onClick={() => {
-                if (isLoggedIn) {
-                  router.push("/profile");
-                } else {
-                  router.push("/login");
-                }
+                router.push("/login");
               }}
             >
               {isLoggedIn ? (
