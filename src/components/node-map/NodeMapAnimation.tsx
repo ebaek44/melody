@@ -2,17 +2,21 @@
 import Node from "./node";
 import { Artist } from "@/types";
 
+interface props {
+  center: Artist;
+  orbit: Artist[];
+  state: string;
+  radius?: string;
+  changeMiddleArtist: (artist: Artist) => void;
+}
+
 export default function OrbitDynamic({
   center,
   orbit,
   state = "spread", // 'spread' | 'gather' (you toggle this)
   radius = "9rem", // ring radius (string like '9rem' or '140px')
-}: {
-  center: Artist;
-  orbit: Artist[];
-  state: "spread" | "gather";
-  radius?: string;
-}) {
+  changeMiddleArtist,
+}: props) {
   const n = Math.max(orbit.length, 1);
 
   return (
@@ -22,7 +26,7 @@ export default function OrbitDynamic({
       style={{ ["--r" as any]: radius }}
     >
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <Node {...center} />
+        <Node a={center} />
       </div>
       {orbit.map((a, i) => {
         const angle = (360 / n) * i;
@@ -40,7 +44,7 @@ export default function OrbitDynamic({
             transition-transform duration-500 ease-out transform-gpu will-change-transform
           "
           >
-            <Node {...a} />
+            <Node a={a} changeMiddleArtist={changeMiddleArtist} />
           </div>
         );
       })}

@@ -63,24 +63,28 @@ export default function NodeMap() {
     },
   ];
 
-  const [middleArtist, setMiddleArtist] = useState(String);
-  const [stateTest, setStateTest] = useState("gather");
-  const toggleStateTest = () => {
-    if (stateTest === "gather") {
-      setStateTest("spread");
-    } else {
-      setStateTest("gather");
-    }
+  const [middleArtist, setMiddleArtist] = useState<Artist>(sampleArtists[0]);
+  const [state, setState] = useState("gather");
+
+  const changeMiddleArtist = (a: Artist) => {
+    // Here we would add the API retrieval
+    // Also the helper function for turning that retrieved data into our own type
+    setState("gather");
+    setTimeout(() => {
+      setState("spread");
+      setMiddleArtist(a);
+    }, 950);
   };
+
   return (
     <div>
       <OrbitDynamic
-        center={sampleArtists[0]}
+        center={middleArtist}
         orbit={sampleArtists.slice(1)}
-        state={stateTest}
+        state={state}
         radius="250px"
+        changeMiddleArtist={changeMiddleArtist}
       />
-      <Button onClick={toggleStateTest}>Test State Switch</Button>
     </div>
   );
 }

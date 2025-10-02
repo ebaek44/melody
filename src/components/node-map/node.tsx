@@ -1,9 +1,16 @@
 import { Artist } from "@/types";
+import { Button } from "../ui/button";
+
+interface props {
+  a: Artist;
+  changeMiddleArtist?: (artist: Artist) => void;
+}
 
 // This object will have the artist name and the url to get to their page
-export default function Node(a: Artist) {
+export default function Node({ a, changeMiddleArtist }: props) {
   return (
-    <a
+    <Button
+      onClick={() => changeMiddleArtist?.(a)}
       className="
   relative block w-[6rem] h-[6rem] rounded-full flex justify-center 
   border-solid border-gray-300 border-[5px] 
@@ -18,6 +25,6 @@ export default function Node(a: Artist) {
           </span>
         </div>
       )}
-    </a>
+    </Button>
   );
 }
