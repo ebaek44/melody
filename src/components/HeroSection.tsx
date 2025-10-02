@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Loader,
   Plus,
@@ -184,6 +185,7 @@ const MusicBoard = () => {
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -234,7 +236,12 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6 items-center">
-            <button className="bg-emerald-600 text-white hover:bg-emerald-700 text-base h-12 px-8 transition-all duration-200 rounded-lg">
+            <button
+              onClick={() => {
+                router.push("/home");
+              }}
+              className="bg-emerald-600 text-white hover:bg-emerald-700 text-base h-12 px-8 transition-all duration-200 rounded-lg"
+            >
               Start discovering
             </button>
             <button className="border border-gray-300 text-gray-700 hover:bg-gray-50 text-base h-12 px-8 transition-all duration-200 rounded-lg bg-white">

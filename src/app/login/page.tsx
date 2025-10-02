@@ -42,7 +42,7 @@ export default function LoginPage() {
         </h1>
 
         {/* Spotify login */}
-        <LoginButton provider="spotify" callbackUrl="/" />
+        <LoginButton provider="spotify" callbackUrl="/home" />
 
         {/* Back to Homepage */}
         <div className="mt-4">
