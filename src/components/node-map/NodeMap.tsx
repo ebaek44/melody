@@ -2,7 +2,10 @@
 import { useState } from "react";
 import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
-import { Button } from "../ui/button";
+import {
+  fetchArtist,
+  fetchRelatedArtists,
+} from "@/app/actions/spotify/actions";
 
 export default function NodeMap() {
   const sampleArtists: Artist[] = [
@@ -29,7 +32,7 @@ export default function NodeMap() {
     {
       name: "Kendrick Lamar",
       url: "https://open.spotify.com/artist/2YZyLoL8N0Wb9xBt1NhZWg",
-      id: "2YZyLoL8N0Wb9xBt1NhZWg",
+      id: "0TnOYISbd1XYRBk9myaseg",
     },
     {
       name: "Ariana Grande",
@@ -64,15 +67,49 @@ export default function NodeMap() {
   ];
 
   const [middleArtist, setMiddleArtist] = useState<Artist>(sampleArtists[0]);
-  const [state, setState] = useState("gather");
+  const [surroundArtists, setSurroundArtists] = useState<Artist[]>(
+    sampleArtists.slice(1)
+  );
+  const [state, setState] = useState("spread");
 
-  const changeMiddleArtist = (a: Artist) => {
-    // Here we would add the API retrieval
+  let stack = [middleArtist];
+
+  const convertArtist = (artist: any) => {
+    const name = artist.name;
+    const url = artist.href;
+    const id = artist.id;
+    const pfp = artist.images[0].url;
+    const returnArtist: Artist = {
+      name: name,
+      url: url,
+      id: id,
+      pfp: pfp,
+    };
+    return returnArtist;
+  };
+
+  const convertArtistList = (artistList: any[]) => {
+    let res = [];
+    for (let i = 0; i < artistList.length; i++) {
+      if (stack.includes(artistList[i])) {
+      } else {
+        const temp = convertArtist(artistList[i]);
+        res.push(temp);
+      }
+    }
+    return res;
+  };
+
+  const changeMiddleArtist = async (a: Artist) => {
+    const apiData = await fetchRelatedArtists(a.id);
+    const formattedArtists = convertArtistList(apiData.artists);
     // Also the helper function for turning that retrieved data into our own type
     setState("gather");
+    stack.push(a);
     setTimeout(() => {
       setState("spread");
       setMiddleArtist(a);
+      setSurroundArtists(formattedArtists);
     }, 950);
   };
 
@@ -80,7 +117,7 @@ export default function NodeMap() {
     <div>
       <OrbitDynamic
         center={middleArtist}
-        orbit={sampleArtists.slice(1)}
+        orbit={surroundArtists}
         state={state}
         radius="250px"
         changeMiddleArtist={changeMiddleArtist}
