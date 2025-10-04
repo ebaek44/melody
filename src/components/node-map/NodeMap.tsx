@@ -77,12 +77,10 @@ export default function NodeMap() {
   const convertArtist = (artist: any) => {
     const name = artist.name;
     const url = artist.href;
-    const id = artist.id;
     const pfp = artist.images[0].url;
     const returnArtist: Artist = {
       name: name,
       url: url,
-      id: id,
       pfp: pfp,
     };
     return returnArtist;
@@ -101,7 +99,7 @@ export default function NodeMap() {
   };
 
   const changeMiddleArtist = async (a: Artist) => {
-    const apiData = await fetchRelatedArtists(a.id);
+    const apiData = await fetchRelatedArtists(a.name);
     const formattedArtists = convertArtistList(apiData.artists);
     // Also the helper function for turning that retrieved data into our own type
     setState("gather");
