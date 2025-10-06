@@ -99,18 +99,24 @@ export default function NodeMap() {
   };
 
   const changeMiddleArtist = async (a: Artist) => {
-    setState("gather");
-    setActiveArtist(a.name);
-    const apiData = await fetchRelatedArtists(a.name);
-    const formattedArtists = await convertArtistList(
-      apiData.similarartists.artist
-    );
+    try {
+      setState("gather");
+      setActiveArtist(a.name);
+      const apiData = await fetchRelatedArtists(a.name);
+      const formattedArtists = await convertArtistList(
+        apiData.similarartists.artist
+      );
 
-    // stack.push(a);
-    setState("spread");
-    setMiddleArtist(a);
-    setSurroundArtists(formattedArtists);
-    setActiveArtist("");
+      // stack.push(a);
+      setState("spread");
+      setMiddleArtist(a);
+      setSurroundArtists(formattedArtists);
+      setActiveArtist("");
+    } catch (error) {
+      console.error("Error changing middle artist:", error);
+      setState("spread");
+      setActiveArtist("");
+    }
   };
 
   return (
