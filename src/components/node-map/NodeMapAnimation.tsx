@@ -8,6 +8,7 @@ interface props {
   state: string;
   radius?: string;
   changeMiddleArtist: (artist: Artist) => void;
+  activeArtist: string;
 }
 
 export default function OrbitDynamic({
@@ -16,6 +17,7 @@ export default function OrbitDynamic({
   state = "spread", // 'spread' | 'gather' (you toggle this)
   radius = "9rem", // ring radius (string like '9rem' or '140px')
   changeMiddleArtist,
+  activeArtist,
 }: props) {
   const n = Math.max(orbit.length, 1);
 
@@ -39,10 +41,11 @@ export default function OrbitDynamic({
             style={{
               transform: state === "spread" ? spreadTransform : gatherTransform,
             }}
-            className="
+            className={`
             absolute left-1/2 top-1/2
             transition-transform duration-500 ease-out transform-gpu will-change-transform
-          "
+            ${a.name === activeArtist ? "z-50" : "z-10"}
+          `}
           >
             <Node a={a} changeMiddleArtist={changeMiddleArtist} />
           </div>

@@ -2,10 +2,8 @@
 import { useState } from "react";
 import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
-import {
-  fetchArtist,
-  fetchRelatedArtists,
-} from "@/app/actions/spotify/actions";
+import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
+import { searchArtist } from "@/app/actions/spotify/actions";
 
 export default function NodeMap() {
   const sampleArtists: Artist[] = [
@@ -70,45 +68,45 @@ export default function NodeMap() {
   const [surroundArtists, setSurroundArtists] = useState<Artist[]>(
     sampleArtists.slice(1)
   );
+  const [activeArtist, setActiveArtist] = useState<string>("");
   const [state, setState] = useState("spread");
 
-  let stack = [middleArtist];
+  // let stack = [middleArtist];
 
-  const convertArtist = (artist: any) => {
+  const convertArtist = async (artist: any) => {
     const name = artist.name;
-    const url = artist.href;
-    const pfp = artist.images[0].url;
+
+    const data = await searchArtist(name);
+    const a = data.artists.items[0];
+    const image = a?.images?.[0]?.url ?? undefined;
+    const url = a?.external_urls?.spotify ?? artist.url ?? "#";
     const returnArtist: Artist = {
       name: name,
       url: url,
-      pfp: pfp,
+      pfp: image,
     };
     return returnArtist;
   };
 
-  const convertArtistList = (artistList: any[]) => {
-    let res = [];
-    for (let i = 0; i < artistList.length; i++) {
-      if (stack.includes(artistList[i])) {
-      } else {
-        const temp = convertArtist(artistList[i]);
-        res.push(temp);
-      }
-    }
+  const convertArtistList = async (artistList: any[]): Promise<Artist[]> => {
+    const tasks = artistList.map((x) => convertArtist(x)); // Promise<Artist>[]
+    const res = await Promise.all(tasks); // Artist[]
     return res;
   };
 
   const changeMiddleArtist = async (a: Artist) => {
-    const apiData = await fetchRelatedArtists(a.name);
-    const formattedArtists = convertArtistList(apiData.artists);
-    // Also the helper function for turning that retrieved data into our own type
     setState("gather");
-    stack.push(a);
-    setTimeout(() => {
-      setState("spread");
-      setMiddleArtist(a);
-      setSurroundArtists(formattedArtists);
-    }, 950);
+    setActiveArtist(a.name);
+    const apiData = await fetchRelatedArtists(a.name);
+    const formattedArtists = await convertArtistList(
+      apiData.similarartists.artist
+    );
+
+    // stack.push(a);
+    setState("spread");
+    setMiddleArtist(a);
+    setSurroundArtists(formattedArtists);
+    setActiveArtist("");
   };
 
   return (
@@ -119,6 +117,7 @@ export default function NodeMap() {
         state={state}
         radius="250px"
         changeMiddleArtist={changeMiddleArtist}
+        activeArtist={activeArtist}
       />
     </div>
   );

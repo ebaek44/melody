@@ -43,10 +43,10 @@ async function getSpotifyToken() {
   }
 
 
-export async function fetchRelatedArtists(artistId: string) {
+export async function searchArtist(artistName: string) {
   const accessToken = await getSpotifyToken();
   const response = await fetch(
-    `https://api.spotify.com/v1/artists/${artistId}/related-artists`,
+    `https://api.spotify.com/v1/search/?q=${artistName}&type=artist`,
     {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
