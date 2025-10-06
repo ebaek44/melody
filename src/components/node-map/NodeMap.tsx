@@ -103,6 +103,7 @@ export default function NodeMap() {
       setState("gather");
       setActiveArtist(a.name);
       const apiData = await fetchRelatedArtists(a.name);
+      console.log(apiData);
       const formattedArtists = await convertArtistList(
         apiData.similarartists.artist
       );
