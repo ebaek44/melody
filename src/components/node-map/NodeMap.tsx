@@ -5,6 +5,8 @@ import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
 import { searchArtist } from "@/app/actions/spotify/actions";
 
+type ArtistInput = { name: string; url?: string };
+
 export default function NodeMap() {
   const sampleArtists: Artist[] = [
     {
@@ -73,7 +75,7 @@ export default function NodeMap() {
 
   // let stack = [middleArtist];
 
-  const convertArtist = async (artist: any) => {
+  const convertArtist = async (artist: ArtistInput) => {
     const name = artist.name;
 
     const data = await searchArtist(name);
@@ -88,7 +90,9 @@ export default function NodeMap() {
     return returnArtist;
   };
 
-  const convertArtistList = async (artistList: any[]): Promise<Artist[]> => {
+  const convertArtistList = async (
+    artistList: ArtistInput[]
+  ): Promise<Artist[]> => {
     const tasks = artistList.map((x) => convertArtist(x)); // Promise<Artist>[]
     const res = await Promise.all(tasks); // Artist[]
     return res;

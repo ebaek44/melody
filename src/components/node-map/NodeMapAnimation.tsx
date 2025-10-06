@@ -1,6 +1,7 @@
 // OrbitDynamic.tsx — dynamic count, Tailwind-only transforms
 import Node from "./node";
 import { Artist } from "@/types";
+import type { CSSProperties } from "react";
 
 interface props {
   center: Artist;
@@ -25,7 +26,7 @@ export default function OrbitDynamic({
     <div
       data-state={state}
       className="relative mx-auto h-[28rem] w-[28rem] select-none group"
-      style={{ ["--r" as any]: radius }}
+      style={{ "--r": radius } as CSSProperties}
     >
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <Node a={center} />
