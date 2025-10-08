@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Home } from "lucide-react";
 
 export default function BackButton() {
   const router = useRouter();
@@ -8,9 +9,9 @@ export default function BackButton() {
   return (
     <button
       onClick={() => router.push("/")}
-      className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300"
+      className="p-3 bg-gray-100 text-black rounded-lg hover:bg-gray-200"
     >
-      ← Back to Home
+      <Home/>
     </button>
   );
 }

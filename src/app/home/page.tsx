@@ -4,11 +4,13 @@ import BackButton from "@/components/ui/backbutton";
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-8">
-      <BackButton />
-      <div className="flex border-black border-1 p-75">
-        <NodeMap />
+    <>
+      <div className="fixed top-5 left-5 z-50">
+        <BackButton />
       </div>
-    </main>
+      <main className="fixed inset-0 flex items-center justify-center overflow-hidden">
+        <NodeMap />
+      </main>
+    </>
   );
 }
