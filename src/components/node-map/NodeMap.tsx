@@ -99,7 +99,6 @@ export default function NodeMap() {
         !artistList[i].name.includes("&")
       ) {
         res.push(await convertArtist(artistList[i]));
-        stack.seeItemSet();
       }
       if (res.length == 6) {
         break;
@@ -113,7 +112,6 @@ export default function NodeMap() {
       setState("gather");
       setActiveArtist(a.name);
       const apiData = await fetchRelatedArtists(a.name);
-      console.log(apiData);
       const formattedArtists = await convertArtistList(
         apiData.similarartists.artist
       );
