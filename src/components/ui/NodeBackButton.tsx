@@ -1,6 +1,6 @@
 import React from "react";
 
-const NodeBackButton = (stack: String[]) => {
+const NodeBackButton = (stack: string[]) => {
   return <div>NodeBackButton</div>;
 };
 

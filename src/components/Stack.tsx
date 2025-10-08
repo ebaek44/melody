@@ -3,7 +3,7 @@ import { useState } from "react";
 
 function useStack() {
   const [stack, setStack] = useState<Artist[][]>([]);
-  const [itemSet, setItemSet] = useState<Set<String>>(new Set([]));
+  const [itemSet, setItemSet] = useState<Set<string>>(new Set([]));
 
   const push = (items: Artist[]) => {
     setStack((prev) => [...prev, items]);
