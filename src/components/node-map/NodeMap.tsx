@@ -157,23 +157,26 @@ export default function NodeMap() {
   };
 
   return (
-    <div className="relative flex flex-col items-center">
-      <OrbitDynamic
-        center={middleArtist}
-        orbit={surroundArtists}
-        state={state}
-        radius="250px"
-        changeMiddleArtist={changeMiddleArtist}
-        activeArtist={activeArtist}
-      />
-      {!stack.isEmpty && (
-        <button
-          onClick={goBack}
-          className="p-3 bg-white/90 backdrop-blur-sm text-gray-700 rounded-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 hover:scale-105"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      )}
+    <div className="flex flex-row">
+      <div className="relative flex flex-col items-center">
+        <OrbitDynamic
+          center={middleArtist}
+          orbit={surroundArtists}
+          state={state}
+          radius="250px"
+          changeMiddleArtist={changeMiddleArtist}
+          activeArtist={activeArtist}
+        />
+        {!stack.isEmpty && (
+          <button
+            onClick={goBack}
+            className="p-3 bg-white/90 backdrop-blur-sm text-gray-700 rounded-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 hover:scale-105"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+      {middleArtist.uri && <SpotifyEmbed urlOrUri={middleArtist.uri} />}
     </div>
   );
 }
