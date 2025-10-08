@@ -5,6 +5,7 @@ import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
 import { searchArtist } from "@/app/actions/spotify/actions";
 import useStack from "../Stack";
+import { ArrowLeft } from "lucide-react";
 
 type ArtistInput = { name: string; url?: string };
 
@@ -144,8 +145,7 @@ export default function NodeMap() {
   };
 
   return (
-    <div>
-      {!stack.isEmpty && <button onClick={goBack}>{"<- Back"}</button>}
+    <div className="relative flex flex-col items-center">
       <OrbitDynamic
         center={middleArtist}
         orbit={surroundArtists}
@@ -154,6 +154,14 @@ export default function NodeMap() {
         changeMiddleArtist={changeMiddleArtist}
         activeArtist={activeArtist}
       />
+      {!stack.isEmpty && (
+        <button
+          onClick={goBack}
+          className="p-3 bg-white/90 backdrop-blur-sm text-gray-700 rounded-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 hover:scale-105"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }
