@@ -92,8 +92,19 @@ export default function NodeMap() {
   const convertArtistList = async (
     artistList: ArtistInput[]
   ): Promise<Artist[]> => {
-    const tasks = artistList.map((x) => convertArtist(x));
-    const res = await Promise.all(tasks);
+    const res = [];
+    for (let i = 0; i < 12; i++) {
+      if (
+        !stack.contains(artistList[i].name) &&
+        !artistList[i].name.includes("&")
+      ) {
+        res.push(await convertArtist(artistList[i]));
+        stack.seeItemSet();
+      }
+      if (res.length == 6) {
+        break;
+      }
+    }
     return res;
   };
 

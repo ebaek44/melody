@@ -35,6 +35,10 @@ function useStack() {
     return itemSet.has(item);
   };
 
+  const seeItemSet = () => {
+    console.log(itemSet);
+  };
+
   const size = stack.length;
   const isEmpty = stack.length === 0;
 
@@ -47,6 +51,7 @@ function useStack() {
     contains,
     size,
     isEmpty,
+    seeItemSet,
   };
 }
 
