@@ -5,6 +5,7 @@ import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
 import { searchArtist } from "@/app/actions/spotify/actions";
 import useStack from "../Stack";
+import SpotifyEmbed from "../ui/SpotifyEmbed";
 
 type ArtistInput = { name: string; url?: string };
 
@@ -81,10 +82,12 @@ export default function NodeMap() {
     const a = data.artists.items[0];
     const image = a?.images?.[0]?.url ?? undefined;
     const url = a?.external_urls?.spotify ?? artist.url ?? "#";
+    const uri = a?.uri;
     const returnArtist: Artist = {
       name: name,
       url: url,
       pfp: image,
+      uri: uri,
     };
     return returnArtist;
   };
@@ -153,16 +156,21 @@ export default function NodeMap() {
   };
 
   return (
-    <div>
-      {!stack.isEmpty && <button onClick={goBack}>{"<- Back"}</button>}
-      <OrbitDynamic
-        center={middleArtist}
-        orbit={surroundArtists}
-        state={state}
-        radius="250px"
-        changeMiddleArtist={changeMiddleArtist}
-        activeArtist={activeArtist}
-      />
+    <div className="flex">
+      <div className="m-[100px]">
+        {!stack.isEmpty && <button onClick={goBack}>{"<- Back"}</button>}
+        <OrbitDynamic
+          center={middleArtist}
+          orbit={surroundArtists}
+          state={state}
+          radius="250px"
+          changeMiddleArtist={changeMiddleArtist}
+          activeArtist={activeArtist}
+        />
+      </div>
+      <div className="flex h-screen items-center">
+        {middleArtist.uri && <SpotifyEmbed urlOrUri={middleArtist.uri} />}
+      </div>
     </div>
   );
 }

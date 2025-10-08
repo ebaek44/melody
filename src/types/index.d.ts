@@ -5,4 +5,5 @@ export type Artist = {
   followers?: number;
   popularity?: number;
   pfp?: string;
+  uri?: string;
 };
