@@ -1,27 +1,28 @@
+import { Artist } from "@/types";
 import { useState } from "react";
 
 function useStack() {
-  const [stack, setStack] = useState<String[]>([]);
+  const [stack, setStack] = useState<Artist[][]>([]);
   const [itemSet, setItemSet] = useState<Set<String>>(new Set([]));
 
-  const push = (item: String) => {
-    setStack((prev) => [...prev, item]);
-    setItemSet((prev) => new Set(prev).add(item));
+  const push = (items: Artist[]) => {
+    setStack((prev) => [...prev, items]);
+    setItemSet((prev) => new Set(prev).add(items[0].name));
   };
 
-  const pop = (): String | undefined => {
-    if (stack.length === 0) return undefined;
+  const pop = (): Artist[] | Artist[] => {
+    if (stack.length === 0) throw new Error("Cannot pop from empty stack");
     const item = stack[stack.length - 1];
     setStack((prev) => prev.slice(0, -1));
     setItemSet((prev) => {
       const newSet = new Set(prev);
-      newSet.delete(item);
+      newSet.delete(item[0].name);
       return newSet;
     });
     return item;
   };
 
-  const peek = (): String | undefined => {
+  const peek = (): Artist[] | undefined => {
     return stack.length > 0 ? stack[stack.length - 1] : undefined;
   };
 
@@ -30,7 +31,9 @@ function useStack() {
     setItemSet(new Set());
   };
 
-  const contains = () => {};
+  const contains = (item: string) => {
+    return itemSet.has(item);
+  };
 
   const size = stack.length;
   const isEmpty = stack.length === 0;
@@ -41,6 +44,7 @@ function useStack() {
     pop,
     peek,
     clear,
+    contains,
     size,
     isEmpty,
   };

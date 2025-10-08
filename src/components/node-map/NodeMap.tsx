@@ -4,6 +4,7 @@ import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
 import { searchArtist } from "@/app/actions/spotify/actions";
+import useStack from "../Stack";
 
 type ArtistInput = { name: string; url?: string };
 
@@ -67,17 +68,15 @@ export default function NodeMap() {
   ];
 
   const [middleArtist, setMiddleArtist] = useState<Artist>(sampleArtists[0]);
-  const [surroundArtists, setSurroundArtists] = useState<Artist[]>(
-    sampleArtists.slice(1)
-  );
+  const [surroundArtists, setSurroundArtists] = useState<Artist[]>([
+    sampleArtists[1],
+  ]);
   const [activeArtist, setActiveArtist] = useState<string>("");
   const [state, setState] = useState("spread");
-
-  // let stack = [middleArtist];
+  const stack = useStack();
 
   const convertArtist = async (artist: ArtistInput) => {
     const name = artist.name;
-
     const data = await searchArtist(name);
     const a = data.artists.items[0];
     const image = a?.images?.[0]?.url ?? undefined;
@@ -93,8 +92,8 @@ export default function NodeMap() {
   const convertArtistList = async (
     artistList: ArtistInput[]
   ): Promise<Artist[]> => {
-    const tasks = artistList.map((x) => convertArtist(x)); // Promise<Artist>[]
-    const res = await Promise.all(tasks); // Artist[]
+    const tasks = artistList.map((x) => convertArtist(x));
+    const res = await Promise.all(tasks);
     return res;
   };
 
@@ -108,7 +107,7 @@ export default function NodeMap() {
         apiData.similarartists.artist
       );
 
-      // stack.push(a);
+      stack.push([middleArtist, formattedArtists].flat());
       setState("spread");
       setMiddleArtist(a);
       setSurroundArtists(formattedArtists);
@@ -120,8 +119,33 @@ export default function NodeMap() {
     }
   };
 
+  const goBack = async () => {
+    if (stack.isEmpty) {
+      console.log("history is empty");
+      return;
+    }
+
+    const previous_nodes = stack.pop();
+
+    try {
+      setState("gather");
+      setActiveArtist(previous_nodes[0].name);
+      setTimeout(() => {
+        setState("spread");
+        setMiddleArtist(previous_nodes[0]);
+        setSurroundArtists(previous_nodes.slice(1));
+        setActiveArtist("");
+      }, 950);
+    } catch (error) {
+      console.error("Error changing middle artist:", error);
+      setState("spread");
+      setActiveArtist("");
+    }
+  };
+
   return (
     <div>
+      {!stack.isEmpty && <button onClick={goBack}>{"<- Back"}</button>}
       <OrbitDynamic
         center={middleArtist}
         orbit={surroundArtists}

@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 
 interface props {
   center: Artist;
-  orbit: Artist[];
+  orbit?: Artist[];
   state: string;
   radius?: string;
   changeMiddleArtist: (artist: Artist) => void;
@@ -20,7 +20,7 @@ export default function OrbitDynamic({
   changeMiddleArtist,
   activeArtist,
 }: props) {
-  const n = Math.max(orbit.length, 1);
+  const n = orbit ? Math.max(orbit.length, 1) : 1;
 
   return (
     <div
@@ -31,27 +31,29 @@ export default function OrbitDynamic({
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <Node a={center} />
       </div>
-      {orbit.map((a, i) => {
-        const angle = (360 / n) * i;
-        const spreadTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(${radius}) rotate(${-angle}deg)`;
-        const gatherTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(0) rotate(${-angle}deg)`;
+      {orbit &&
+        orbit.map((a, i) => {
+          const angle = (360 / n) * i;
+          const spreadTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(${radius}) rotate(${-angle}deg)`;
+          const gatherTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(0) rotate(${-angle}deg)`;
 
-        return (
-          <div
-            key={i}
-            style={{
-              transform: state === "spread" ? spreadTransform : gatherTransform,
-            }}
-            className={`
+          return (
+            <div
+              key={i}
+              style={{
+                transform:
+                  state === "spread" ? spreadTransform : gatherTransform,
+              }}
+              className={`
             absolute left-1/2 top-1/2
             transition-transform duration-500 ease-out transform-gpu will-change-transform
             ${a.name === activeArtist ? "z-50" : "z-10"}
           `}
-          >
-            <Node a={a} changeMiddleArtist={changeMiddleArtist} />
-          </div>
-        );
-      })}
+            >
+              <Node a={a} changeMiddleArtist={changeMiddleArtist} />
+            </div>
+          );
+        })}
     </div>
   );
 }
