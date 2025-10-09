@@ -27,7 +27,7 @@ function guessHeight(embedSrc: string) {
 export default function SpotifyEmbed({
   urlOrUri,
   theme = "dark",
-  width = "50%",
+  width = "100%",
   height,
 }: Props) {
   const srcBase = toEmbedSrc(urlOrUri);

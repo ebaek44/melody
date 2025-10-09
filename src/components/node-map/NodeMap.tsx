@@ -157,7 +157,7 @@ export default function NodeMap() {
   };
 
   return (
-    <div className="flex flex-row">
+    <div className="flex flex-row gap-x-42">
       <div className="relative flex flex-col items-center">
         <OrbitDynamic
           center={middleArtist}
@@ -176,7 +176,9 @@ export default function NodeMap() {
           </button>
         )}
       </div>
-      {middleArtist.uri && <SpotifyEmbed urlOrUri={middleArtist.uri} />}
+      {middleArtist.uri && (
+        <SpotifyEmbed urlOrUri={middleArtist.uri} width={500} height={500} />
+      )}
     </div>
   );
 }
