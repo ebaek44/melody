@@ -7,6 +7,8 @@ import { searchArtist, getTopArtists } from "@/app/actions/spotify/actions";
 import useStack from "../Stack";
 import SpotifyEmbed from "../ui/SpotifyEmbed";
 import { ArrowLeft } from "lucide-react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 type ArtistInput = { name: string; url?: string };
 
@@ -66,13 +68,18 @@ export default function NodeMap() {
     let cancel = false;
     (async () => {
       try {
-        const data = await getTopArtists();
-        if (cancel) return;
+        const session = await getServerSession(authOptions);
+        if (session) {
+          const data = await getTopArtists(
+            session.spotifyAccessToken as string
+          );
 
-        const topartists = await convertArtistList(data.items);
-        if (cancel) return;
-        console.log(topartists);
-        setSurroundArtists(topartists);
+          if (cancel) return;
+          const topartists = await convertArtistList(data.items);
+          if (cancel) return;
+          console.log(topartists);
+          setSurroundArtists(topartists);
+        }
       } catch (e) {
         console.error(e);
       }

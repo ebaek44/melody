@@ -63,13 +63,12 @@ export async function searchArtist(artistName: string) {
 }
 
 
-export async function getTopArtists() {
-  const accessToken = await getSpotifyToken();
+export async function getTopArtists(userAccessToken: string) {
   const response = await fetch(
   'https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=8&offset=5',
   {
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${userAccessToken}`,
     },
   }
 );
