@@ -71,7 +71,7 @@ export default function NodeMap() {
 
         const topartists = await convertArtistList(data.items);
         if (cancel) return;
-
+        console.log(topartists);
         setSurroundArtists(topartists);
       } catch (e) {
         console.error(e);
