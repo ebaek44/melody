@@ -78,6 +78,6 @@ export async function getTopArtists() {
   if (!response.ok) {
     throw new Error(`Spotify API error: ${data.error?.message || response.statusText}`);
   }
-  
+  console.log(data)
   return data;
 }
