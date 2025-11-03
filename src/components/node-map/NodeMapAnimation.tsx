@@ -28,9 +28,11 @@ export default function OrbitDynamic({
       className="relative mx-auto h-[28rem] w-[28rem] select-none group"
       style={{ "--r": radius } as CSSProperties}
     >
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <Node a={center} />
-      </div>
+      {center.name && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <Node a={center} />
+        </div>
+      )}
       {orbit &&
         orbit.map((a, i) => {
           const angle = (360 / n) * i;

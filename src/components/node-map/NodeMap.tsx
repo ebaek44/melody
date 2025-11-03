@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
-import { searchArtist } from "@/app/actions/spotify/actions";
+import { searchArtist, getTopArtists } from "@/app/actions/spotify/actions";
 import useStack from "../Stack";
 import SpotifyEmbed from "../ui/SpotifyEmbed";
 import { ArrowLeft } from "lucide-react";
@@ -69,14 +69,11 @@ export default function NodeMap() {
     },
   ];
 
-  const [middleArtist, setMiddleArtist] = useState<Artist>(sampleArtists[0]);
-  const [surroundArtists, setSurroundArtists] = useState<Artist[]>([
-    sampleArtists[1],
-  ]);
   const [activeArtist, setActiveArtist] = useState<string>("");
   const [state, setState] = useState("spread");
   const stack = useStack();
 
+  // converts a single raw JSON data for a spotify artist
   const convertArtist = async (artist: ArtistInput) => {
     const name = artist.name;
     const data = await searchArtist(name);
@@ -93,6 +90,7 @@ export default function NodeMap() {
     return returnArtist;
   };
 
+  // Runs a list of artists (making sure they are not repeats) and converts them using convertArtist
   const convertArtistList = async (
     artistList: ArtistInput[]
   ): Promise<Artist[]> => {
@@ -111,6 +109,37 @@ export default function NodeMap() {
     return res;
   };
 
+  // Place holder for a blank middle node
+  const placeHolder: Artist = {
+    name: "",
+    url: "",
+    pfp: "",
+    uri: "",
+  };
+  const [middleArtist, setMiddleArtist] = useState<Artist>(placeHolder);
+  const [surroundArtists, setSurroundArtists] = useState<Artist[]>([]);
+
+  // This will get the top artists from a users spotify for the original page
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      try {
+        const data = await getTopArtists();
+        if (cancel) return;
+
+        const topartists = await convertArtistList(data.items);
+        if (cancel) return;
+
+        setSurroundArtists(topartists);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
   const changeMiddleArtist = async (a: Artist) => {
     try {
       setState("gather");
@@ -119,8 +148,9 @@ export default function NodeMap() {
       const formattedArtists = await convertArtistList(
         apiData.similarartists.artist
       );
-
-      stack.push([middleArtist, formattedArtists].flat());
+      if (middleArtist) {
+        stack.push([middleArtist, formattedArtists].flat());
+      }
       setState("spread");
       setMiddleArtist(a);
       setSurroundArtists(formattedArtists);
@@ -176,7 +206,7 @@ export default function NodeMap() {
           </button>
         )}
       </div>
-      {middleArtist.uri && (
+      {middleArtist && middleArtist.uri && (
         <SpotifyEmbed urlOrUri={middleArtist.uri} width={500} height={500} />
       )}
     </div>

@@ -61,3 +61,23 @@ export async function searchArtist(artistName: string) {
   
   return data;
 }
+
+
+export async function getTopArtists() {
+  const accessToken = await getSpotifyToken();
+  const response = await fetch(
+  'https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=8&offset=5',
+  {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }
+);
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(`Spotify API error: ${data.error?.message || response.statusText}`);
+  }
+  
+  return data;
+}
