@@ -68,7 +68,7 @@ export async function getTopArtists(userAccessToken: string) {
   'https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=8&offset=5',
   {
     headers: {
-      Authorization: `Bearer ${userAccessToken}`,
+      Authorization: `Bearer ${userAccessToken}`, cache: "no-store" 
     },
   }
 );
