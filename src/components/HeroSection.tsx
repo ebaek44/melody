@@ -210,50 +210,47 @@ const HeroSection = () => {
         <div className="w-full h-full opacity-10 bg-gradient-to-r from-emerald-500 to-purple-600 blur-[120px]"></div>
       </div>
       {/* Start of the discover prompt seciont */}
-      {session?.spotifyAccessToken ? (
-        <h1>Connected to spotify now we can display node map</h1>
-      ) : (
-        <div
-          className={`relative z-10 max-w-4xl text-center space-y-6 transition-all duration-700 transform ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-        >
-          <div className="flex justify-center">
-            <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full bg-white text-emerald-600 border border-emerald-200">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              Now with AI-powered recommendations
-            </span>
-          </div>
-
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight text-balance text-gray-900">
-            Discover new music based on your{" "}
-            <span className="text-gray-900">listening history</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto text-balance">
-            Uncover your next favorite songs with AI-powered recommendations
-            that learn from your unique music taste and listening patterns.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6 items-center">
-            <button
-              onClick={() => {
-                router.push("/home");
-              }}
-              className="bg-emerald-600 text-white hover:bg-emerald-700 text-base h-12 px-8 transition-all duration-200 rounded-lg"
-            >
-              Start discovering
-            </button>
-            <button className="border border-gray-300 text-gray-700 hover:bg-gray-50 text-base h-12 px-8 transition-all duration-200 rounded-lg bg-white">
-              Connect Spotify
-            </button>
-          </div>
-
-          <div className="pt-6 text-sm text-gray-500">
-            Free forever • Connect multiple streaming services
-          </div>
+      <div
+        className={`relative z-10 max-w-4xl text-center space-y-6 transition-all duration-700 transform ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+        }`}
+      >
+        <div className="flex justify-center">
+          <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full bg-white text-emerald-600 border border-emerald-200">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            Now with AI-powered recommendations
+          </span>
         </div>
-      )}
+
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight text-balance text-gray-900">
+          Discover new music based on your{" "}
+          <span className="text-gray-900">listening history</span>
+        </h1>
+
+        <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto text-balance">
+          Uncover your next favorite songs with AI-powered recommendations that
+          learn from your unique music taste and listening patterns.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6 items-center">
+          <button
+            onClick={() => {
+              router.push("/home");
+            }}
+            className="bg-emerald-600 text-white hover:bg-emerald-700 text-base h-12 px-8 transition-all duration-200 rounded-lg"
+          >
+            Start discovering
+          </button>
+          <button className="border border-gray-300 text-gray-700 hover:bg-gray-50 text-base h-12 px-8 transition-all duration-200 rounded-lg bg-white">
+            Connect Spotify
+          </button>
+        </div>
+
+        <div className="pt-6 text-sm text-gray-500">
+          Free forever • Connect multiple streaming services
+        </div>
+      </div>
+
       {/* end of the discover prompt seciont */}
 
       {/* Music Dashboard integrated in hero section */}
