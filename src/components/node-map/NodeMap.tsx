@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import OrbitDynamic from "./NodeMapAnimation";
 import { Artist } from "@/types";
 import { fetchRelatedArtists } from "@/app/actions/lastfm/actions";
@@ -7,12 +7,15 @@ import { searchArtist, getTopArtists } from "@/app/actions/spotify/actions";
 import useStack from "../Stack";
 import SpotifyEmbed from "../ui/SpotifyEmbed";
 import { ArrowLeft } from "lucide-react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
 type ArtistInput = { name: string; url?: string };
 
-export default function NodeMap() {
+export default function NodeMap({
+  userTopArtists,
+}: {
+  userTopArtists: Artist[];
+}) {
   const [activeArtist, setActiveArtist] = useState<string>("");
   const [state, setState] = useState("spread");
   const stack = useStack();
@@ -25,7 +28,8 @@ export default function NodeMap() {
     uri: "",
   };
   const [middleArtist, setMiddleArtist] = useState<Artist>(placeHolder);
-  const [surroundArtists, setSurroundArtists] = useState<Artist[]>([]);
+  const [surroundArtists, setSurroundArtists] =
+    useState<Artist[]>(userTopArtists);
 
   // converts a single raw JSON data for a spotify artist
   const convertArtist = async (artist: ArtistInput) => {
@@ -62,32 +66,6 @@ export default function NodeMap() {
     }
     return res;
   };
-
-  // This will get the top artists from a users spotify for the original page
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      try {
-        const session = await getServerSession(authOptions);
-        if (session) {
-          const data = await getTopArtists(
-            session.spotifyAccessToken as string
-          );
-
-          if (cancel) return;
-          const topartists = await convertArtistList(data.items);
-          if (cancel) return;
-          console.log(topartists);
-          setSurroundArtists(topartists);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-    return () => {
-      cancel = true;
-    };
-  }, []);
 
   const changeMiddleArtist = async (a: Artist) => {
     try {
