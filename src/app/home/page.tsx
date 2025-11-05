@@ -22,6 +22,7 @@ export default async function HomePage() {
   }
   // Map /v1/me/top/artists items -> Artist (no extra fetch)
   const mapSpotifyItems = (items: SpotifyTopArtists): Artist[] => {
+    console.log("hello");
     if (!Array.isArray(items)) return [];
     return items
       .map((it) => ({
