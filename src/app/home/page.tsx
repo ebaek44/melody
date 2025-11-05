@@ -5,13 +5,23 @@ import { authOptions } from "@/lib/auth";
 import { getTopArtists } from "@/app/actions/spotify/actions";
 import { Artist } from "@/types";
 
+type SpotifyImage = { url: string; height?: number; width?: number };
+type SpotifyArtist = {
+  id: string;
+  name: string;
+  uri: string;
+  images?: SpotifyImage[];
+  external_urls?: { spotify?: string };
+};
+type SpotifyTopArtists = { items: SpotifyArtist[] };
+
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
   if (!session?.spotifyAccessToken) {
     return null;
   }
   // Map /v1/me/top/artists items -> Artist (no extra fetch)
-  const mapSpotifyItems = (items: any[]): Artist[] => {
+  const mapSpotifyItems = (items: SpotifyTopArtists): Artist[] => {
     if (!Array.isArray(items)) return [];
     return items
       .map((it) => ({
