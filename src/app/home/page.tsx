@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getTopArtists } from "@/app/actions/spotify/actions";
 import { Artist } from "@/types";
+export const dynamic = "force-dynamic";
 
 type SpotifyImage = { url: string; height?: number; width?: number };
 type SpotifyArtist = {
@@ -34,7 +35,13 @@ export default async function HomePage() {
       }))
       .filter((a) => a.name);
   };
-  const data = await getTopArtists(session.spotifyAccessToken);
+  let data;
+  try {
+    data = await getTopArtists(session.spotifyAccessToken as string);
+  } catch (err) {
+    console.error("fetchUserTopArtists failed:", err);
+    throw err; // surface it
+  }
   const topArtists = mapSpotifyItems(data.items);
   return (
     <>

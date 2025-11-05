@@ -8,7 +8,6 @@ import useStack from "../Stack";
 import SpotifyEmbed from "../ui/SpotifyEmbed";
 import { ArrowLeft } from "lucide-react";
 
-export const dynamic = "force-dynamic";
 type ArtistInput = { name: string; url?: string };
 
 export default function NodeMap({
