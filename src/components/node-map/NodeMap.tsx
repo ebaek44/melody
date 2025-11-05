@@ -112,7 +112,9 @@ export default function NodeMap({
       setActiveArtist("");
     }
   };
-
+  if (!surroundArtists || surroundArtists.length === 0) {
+    return <div className="p-4 text-sm opacity-70">No top artists found.</div>;
+  }
   return (
     <div className="flex flex-row gap-x-42">
       <div className="relative flex flex-col items-center">
