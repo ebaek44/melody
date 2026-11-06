@@ -65,7 +65,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, user }) {
       // First time signing in with Spotify
       if (account?.provider === "spotify") {
-        upsertUser(account.providerAccountId, user?.name, user?.image);
+        await upsertUser(account.providerAccountId, user?.name, user?.image);
         token.spotifyUserId = account.providerAccountId;
         token.spotifyRefreshError = undefined;
         // account.expires_at is seconds since epoch

@@ -51,7 +51,7 @@ export default async function LoginPage({
             <ArrowLeft size={15} /> Keep exploring as a guest
           </Link>
           <p className="login-footnote">
-            Your collection is saved in MusicMap. We don’t change your Spotify
+            Your collection is saved in musicweb. We don’t change your Spotify
             library or playlists.
           </p>
         </div>

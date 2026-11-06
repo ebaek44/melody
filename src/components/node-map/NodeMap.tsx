@@ -128,7 +128,7 @@ export default function NodeMap({
           window.history.pushState({ musicmapIndex: next.index }, "", url);
         else if (mode !== "pop")
           window.history.replaceState({ musicmapIndex: next.index }, "", url);
-        document.title = `${data.center.name} · Discover · MusicMap`;
+        document.title = `${data.center.name} · Discover · musicweb.`;
       } catch (error) {
         if (seq === sequence.current && !controller.signal.aborted)
           setError(
@@ -190,7 +190,7 @@ export default function NodeMap({
       "",
       `/discover?artist=${encodeURIComponent(data.center.name)}`,
     );
-    document.title = `${data.center.name} · Discover · MusicMap`;
+    document.title = `${data.center.name} · Discover · musicweb.`;
   }
   async function share() {
     try {

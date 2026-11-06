@@ -1,51 +1,57 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { encode } from "next-auth/jwt";
-import { DatabaseSync } from "node:sqlite";
+import { startTestPostgres } from "./helpers/postgres";
 
 test(
   "production routes enforce authentication, ownership, CSRF and persistence",
   { timeout: 60_000 },
   async () => {
-    const dir = mkdtempSync(join(tmpdir(), "musicmap-integration-"));
-    const dbPath = join(dir, "test.sqlite");
+    const pg = await startTestPostgres();
     const secret = "isolated-integration-test-secret-never-use-in-production";
     const base = "http://127.0.0.1:3107";
     let logs = "";
-    const server = spawn(
-      process.execPath,
-      [
-        "node_modules/next/dist/bin/next",
-        "start",
-        "--hostname",
-        "127.0.0.1",
-        "--port",
-        "3107",
-      ],
-      {
-        env: {
-          ...process.env,
-          NEXTAUTH_SECRET: secret,
-          NEXTAUTH_URL: base,
-          MUSICMAP_DB_PATH: dbPath,
-          SPOTIFY_CLIENT_ID: "",
-          SPOTIFY_CLIENT_SECRET: "",
-          LASTFM_API_KEY: "",
+    let server: ReturnType<typeof spawn> | undefined;
+    async function stopServer() {
+      if (!server || server.exitCode !== null) return;
+      const child = server;
+      child.kill("SIGTERM");
+      await new Promise<void>((resolve) => child.once("exit", () => resolve()));
+    }
+    async function startServer(databaseUrl: string) {
+      logs = "";
+      server = spawn(
+        process.execPath,
+        [
+          "node_modules/next/dist/bin/next",
+          "start",
+          "--hostname",
+          "127.0.0.1",
+          "--port",
+          "3107",
+        ],
+        {
+          env: {
+            ...process.env,
+            NEXTAUTH_SECRET: secret,
+            NEXTAUTH_URL: base,
+            DATABASE_URL: databaseUrl,
+            POSTGRES_URL: "",
+            VERCEL: undefined,
+            SPOTIFY_CLIENT_ID: "",
+            SPOTIFY_CLIENT_SECRET: "",
+            LASTFM_API_KEY: "",
+          },
+          stdio: ["ignore", "pipe", "pipe"],
         },
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-    server.stdout.on("data", (data) => {
-      logs += data.toString();
-    });
-    server.stderr.on("data", (data) => {
-      logs += data.toString();
-    });
-    try {
+      );
+      server.stdout!.on("data", (data) => {
+        logs += data.toString();
+      });
+      server.stderr!.on("data", (data) => {
+        logs += data.toString();
+      });
       let ready = false;
       for (let i = 0; i < 80; i++) {
         try {
@@ -56,19 +62,14 @@ test(
         } catch {
           /* Starting. */
         }
-        if (server.exitCode !== null)
+        if (server?.exitCode !== null)
           throw Error("Test server failed: " + logs);
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
       assert.ok(ready, "Production server became ready");
-      const db = new DatabaseSync(dbPath);
-      // Authentication callback normally creates these; use isolated fixtures here.
-      db.exec(
-        "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT, image TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
-      );
-      for (const id of ["test-a", "test-b"])
-        db.prepare("INSERT INTO users VALUES (?, ?, NULL, 0, 0)").run(id, id);
-      db.close();
+    }
+    try {
+      await startServer("");
       const cookie = async (id: string) =>
         "next-auth.session-token=" +
         (await encode({
@@ -108,6 +109,19 @@ test(
       assert.equal(session.user.id, "test-a");
       assert.ok(!JSON.stringify(session).includes("private-access-token"));
       assert.ok(!JSON.stringify(session).includes("private-refresh-token"));
+      // Missing cloud configuration returns a clear service failure, never local storage.
+      assert.equal((await request("/api/library", "GET", a)).status, 503);
+      assert.equal((await request("/discover")).status, 200);
+      await stopServer();
+      await startServer(pg.url);
+      assert.equal((await request("/api/library", "GET", a)).status, 200);
+      // The preceding request initializes the schema; fixtures stay in this test's Postgres.
+      for (const id of ["test-a", "test-b"]) {
+        await pg.db.query(
+          "INSERT INTO musicmap.users VALUES ($1, $1, NULL, 0, 0)",
+          [id],
+        );
+      }
       assert.equal((await request("/api/library")).status, 401);
       assert.equal(
         (await request("/api/library", "PUT", undefined, {})).status,
@@ -158,24 +172,24 @@ test(
           .length,
         2,
       );
+      // A fresh function/server process must read the existing external database.
+      await stopServer();
+      await startServer(pg.url);
+      assert.equal(
+        (await request("/api/library", "GET", a).then((r) => r.json())).items
+          .length,
+        2,
+      );
       await request("/api/library", "DELETE", a, { key: saved.items[0].key });
       assert.equal(
         (await request("/api/library", "GET", a).then((r) => r.json())).items
           .length,
         1,
       );
-      const persisted = new DatabaseSync(dbPath);
-      assert.equal(
-        (
-          persisted
-            .prepare(
-              "SELECT COUNT(*) AS n FROM library WHERE user_id = 'test-a'",
-            )
-            .get() as { n: number }
-        ).n,
-        1,
+      const persisted = await pg.db.query<{ n: number }>(
+        "SELECT COUNT(*)::integer AS n FROM musicmap.library WHERE user_id = 'test-a'",
       );
-      persisted.close();
+      assert.equal(persisted.rows[0].n, 1);
       const fallback = await request("/api/discovery?artist=Radiohead").then(
         (r) => r.json(),
       );
@@ -198,12 +212,8 @@ test(
       assert.equal((await request("/discover")).status, 200);
       assert.match(await (await request("/")).text(), /Start discovering/);
     } finally {
-      server.kill("SIGTERM");
-      await new Promise<void>((resolve) => {
-        if (server.exitCode !== null) resolve();
-        else server.once("exit", () => resolve());
-      });
-      rmSync(dir, { recursive: true, force: true });
+      await stopServer();
+      await pg.close();
     }
   },
 );

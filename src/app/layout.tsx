@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   icons: { icon: "/icon.svg" },
-  title: "MusicMap · Follow your curiosity",
+  title: "musicweb. · Follow your curiosity",
   description:
     "Start with an artist you love. Explore connected artists, listen with Spotify, and save the songs that stay with you.",
 };

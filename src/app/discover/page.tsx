@@ -6,7 +6,7 @@ import { getTopArtists } from "@/app/actions/spotify/actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Discover · MusicMap",
+  title: "Discover · musicweb.",
   description:
     "Explore a web of related artists. Follow the connections, listen with Spotify, and keep your favorites.",
 };

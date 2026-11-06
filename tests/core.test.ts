@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { startTestPostgres } from "./helpers/postgres";
+import {
+  databaseConfig,
+  DatabaseConfigurationError,
+} from "../src/lib/database/config";
 import { LruCache, artistKey } from "../src/lib/cache";
 import { validateItem } from "../src/lib/library";
 import { ArtistGraph } from "../src/lib/graph";
@@ -91,37 +95,79 @@ test("Spotify embeds accept only trusted, valid catalog identities", () => {
   assert.equal(spotifyEmbedSrc("javascript:alert(1)"), null);
   assert.equal(spotifyEmbedSrc("spotify:artist:bad"), null);
 });
-test("SQLite persists account libraries, deduplicates saves and isolates users", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "musicmap-core-"));
-  process.env.MUSICMAP_DB_PATH = join(directory, "library.sqlite");
-  const { upsertUser, saveItem, getLibrary, removeItem } =
+test("database configuration requires Postgres and protects hosted TLS", () => {
+  assert.throws(() => databaseConfig({}), DatabaseConfigurationError);
+  assert.throws(
+    () =>
+      databaseConfig({ VERCEL: "1", MUSICMAP_DB_PATH: "/tmp/unsafe.sqlite" }),
+    DatabaseConfigurationError,
+  );
+  assert.throws(
+    () => databaseConfig({ DATABASE_URL: "file:data/musicmap.sqlite" }),
+    DatabaseConfigurationError,
+  );
+  const remote = databaseConfig({
+    DATABASE_URL: "postgresql://user:secret@db.example/music?sslmode=disable",
+  });
+  assert.equal(
+    new URL(remote.connectionString!).searchParams.get("sslmode"),
+    "verify-full",
+  );
+  const local = databaseConfig({
+    DATABASE_URL:
+      "postgresql://postgres@127.0.0.1:5433/postgres?sslmode=disable",
+  });
+  assert.equal(
+    new URL(local.connectionString!).searchParams.get("sslmode"),
+    "disable",
+  );
+  assert.equal(local.max, 3);
+  assert.ok(
+    databaseConfig({ POSTGRES_URL: "postgresql://user@db.example/music" })
+      .connectionString,
+  );
+});
+test("Postgres persists across pools, isolates users, and supports OAuth account creation", async () => {
+  const pg = await startTestPostgres();
+  const previous = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = pg.url;
+  const { upsertUser, saveItem, getLibrary, removeItem, closeDatabase } =
     await import("../src/lib/db");
   try {
-    upsertUser("test-a", "Listener A");
-    upsertUser("test-b", "Listener B");
-    upsertUser("test-a", "Updated name");
+    await upsertUser("test-a", "Listener A");
+    await upsertUser("test-b", "Listener B");
+    await upsertUser("test-a", "Updated name");
     const item = validateItem({
       kind: "artist",
       name: "Radiohead",
       url: "https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb",
     });
-    saveItem("test-a", item);
-    saveItem("test-a", item);
-    assert.equal(getLibrary("test-a").length, 1);
-    assert.equal(getLibrary("test-b").length, 0);
-    removeItem("test-b", item.key);
-    assert.equal(getLibrary("test-a").length, 1);
-    // Reopen the same file with an independent connection to verify disk persistence.
-    const { DatabaseSync } = await import("node:sqlite");
-    const disk = new DatabaseSync(process.env.MUSICMAP_DB_PATH);
+    await Promise.all([saveItem("test-a", item), saveItem("test-a", item)]);
+    assert.equal((await getLibrary("test-a")).length, 1);
+    assert.equal((await getLibrary("test-b")).length, 0);
+    await removeItem("test-b", item.key);
+    assert.equal((await getLibrary("test-a")).length, 1);
+    const createdAt = (await getLibrary("test-a"))[0].createdAt;
+    assert.equal(typeof createdAt, "number");
+    await closeDatabase();
     assert.equal(
-      (disk.prepare("SELECT COUNT(*) AS n FROM library").get() as { n: number })
-        .n,
+      (await getLibrary("test-a")).length,
       1,
+      "New connection pool reads the same remote data",
     );
-    disk.close();
-    removeItem("test-a", item.key);
-    assert.equal(getLibrary("test-a").length, 0);
+    const profile = await pg.db.query<{ name: string }>(
+      "SELECT name FROM musicmap.users WHERE id = 'test-a'",
+    );
+    assert.equal(profile.rows[0].name, "Updated name");
+    const injection = validateItem({
+      ...item,
+      name: "Artist'); DROP TABLE musicmap.users; --",
+    });
+    await saveItem("test-a", injection);
+    assert.equal((await getLibrary("test-a")).length, 2);
+    await removeItem("test-a", injection.key);
+    await removeItem("test-a", item.key);
+    assert.equal((await getLibrary("test-a")).length, 0);
     const { authOptions } = await import("../src/lib/auth");
     const jwt = authOptions.callbacks!.jwt!;
     const token = await jwt({
@@ -145,14 +191,21 @@ test("SQLite persists account libraries, deduplicates saves and isolates users",
     assert.equal(session.user.id, "test-oauth");
     assert.ok(!JSON.stringify(session).includes("private-access"));
     assert.ok(!JSON.stringify(session).includes("private-refresh"));
-    saveItem("test-oauth", item);
-    assert.equal(getLibrary("test-oauth").length, 1);
+    await saveItem("test-oauth", item);
+    assert.equal((await getLibrary("test-oauth")).length, 1);
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      ["--conditions=react-server", "--import", "tsx", "scripts/check-db.ts"],
+      {
+        env: { ...process.env, DATABASE_URL: pg.url, POSTGRES_URL: "" },
+        timeout: 15000,
+      },
+    );
+    assert.match(stdout, /Postgres is connected/);
   } finally {
-    const globalDb = globalThis as typeof globalThis & {
-      musicmapDb?: { close: () => void };
-    };
-    globalDb.musicmapDb?.close();
-    delete globalDb.musicmapDb;
-    rmSync(directory, { recursive: true, force: true });
+    await closeDatabase();
+    if (previous === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previous;
+    await pg.close();
   }
 });

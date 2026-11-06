@@ -1,7 +1,13 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
-import { getLibrary, removeItem, saveItem } from "@/lib/db";
+import {
+  getLibrary,
+  removeItem,
+  saveItem,
+  DatabaseUnavailableError,
+} from "@/lib/db";
+import { DatabaseConfigurationError } from "@/lib/database/config";
 import { validateItem } from "@/lib/library";
 export const runtime = "nodejs";
 
@@ -19,13 +25,19 @@ export async function GET() {
   if (!id) return unauthorized();
   try {
     return NextResponse.json(
-      { items: getLibrary(id) },
+      { items: await getLibrary(id) },
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
+  } catch (error) {
     return NextResponse.json(
       { error: "Your library couldn’t be loaded. Please try again." },
-      { status: 500 },
+      {
+        status:
+          error instanceof DatabaseConfigurationError ||
+          error instanceof DatabaseUnavailableError
+            ? 503
+            : 500,
+      },
     );
   }
 }
@@ -48,14 +60,14 @@ async function mutate(request: NextRequest, operation: "save" | "remove") {
     if (text.length > 8192)
       return NextResponse.json({ error: "Item too large" }, { status: 413 });
     const body = JSON.parse(text);
-    if (operation === "save") saveItem(id, validateItem(body));
+    if (operation === "save") await saveItem(id, validateItem(body));
     else {
       if (typeof body.key !== "string" || !/^[a-f0-9]{32}$/.test(body.key))
         throw new Error("Invalid item key");
-      removeItem(id, body.key);
+      await removeItem(id, body.key);
     }
     return NextResponse.json(
-      { items: getLibrary(id) },
+      { items: await getLibrary(id) },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
@@ -66,7 +78,13 @@ async function mutate(request: NextRequest, operation: "save" | "remove") {
       return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(
       { error: "Your library couldn’t be updated. Please try again." },
-      { status: 500 },
+      {
+        status:
+          error instanceof DatabaseConfigurationError ||
+          error instanceof DatabaseUnavailableError
+            ? 503
+            : 500,
+      },
     );
   }
 }
