@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src tests next.config.ts --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "node --conditions=react-server --import tsx --test tests/core.test.ts",
+    "test:integration": "node --import tsx --test tests/integration.test.ts",
+    "format:check": "prettier --check src tests next.config.ts",
+    "format": "prettier --write src tests next.config.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
@@ -14,26 +19,37 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "class-variance-authority": "^0.7.1",
-    "i": "^0.3.7",
     "lucide-react": "^0.525.0",
-    "next": "15.4.1",
-    "next-auth": "^4.24.11",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "next": "^15.5.29",
+    "next-auth": "^4.24.15",
+    "react": "^19.1.10",
+    "react-dom": "^19.1.10",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.11",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/spotify-api": "^0.0.25",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
-    "eslint-config-next": "15.4.1",
-    "postcss": "^8.5.6",
+    "eslint-config-next": "^15.5.29",
+    "postcss": "^8.5.32",
+    "prettier": "^3.9.10",
     "tailwindcss": "^4.1.11",
+    "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.5"
+    },
+    "postcss": "$postcss"
   }
 }

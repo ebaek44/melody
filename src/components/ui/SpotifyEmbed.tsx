@@ -1,50 +1,45 @@
-// SpotifyEmbed.tsx
 import React from "react";
 
-type Props = {
-  urlOrUri: string;
-  theme?: "dark" | "light";
-  width?: number | string; // '100%' default
-  height?: number; // defaults per type
-};
-
-function toEmbedSrc(urlOrUri: string) {
-  // Accept full URLs or spotify:* URIs
-  if (urlOrUri.startsWith("spotify:")) {
-    const [, type, id] = urlOrUri.split(":"); // spotify:track:ID
-    return `https://open.spotify.com/embed/${type}/${id}`;
+export function spotifyEmbedSrc(input: string) {
+  const uri = input.match(
+    /^spotify:(artist|track|album|playlist):([a-zA-Z0-9]{22})$/,
+  );
+  if (uri)
+    return `https://open.spotify.com/embed/${uri[1]}/${uri[2]}?utm_source=generator&theme=0`;
+  try {
+    const url = new URL(input);
+    const match = url.pathname.match(
+      /^\/(artist|track|album|playlist)\/([a-zA-Z0-9]{22})\/?$/,
+    );
+    if (
+      url.protocol === "https:" &&
+      url.hostname === "open.spotify.com" &&
+      match
+    )
+      return `https://open.spotify.com/embed/${match[1]}/${match[2]}?utm_source=generator&theme=0`;
+  } catch {
+    /* Reject invalid or untrusted iframe URLs. */
   }
-  // URL form → swap to /embed/
-  return urlOrUri.replace("open.spotify.com/", "open.spotify.com/embed/");
+  return null;
 }
-
-function guessHeight(embedSrc: string) {
-  // track/episode small player is 152px; album/playlist/artist are taller
-  if (/(track|episode)\//.test(embedSrc)) return 152;
-  return 352;
-}
-
 export default function SpotifyEmbed({
   urlOrUri,
-  theme = "dark",
-  width = "100%",
-  height,
-}: Props) {
-  const srcBase = toEmbedSrc(urlOrUri);
-  const src = `${srcBase}?utm_source=generator&theme=${
-    theme === "light" ? 0 : 1
-  }`;
-
+  height = 352,
+}: {
+  urlOrUri: string;
+  height?: number;
+}) {
+  const src = spotifyEmbedSrc(urlOrUri);
+  if (!src) return null;
   return (
     <iframe
-      title="Spotify Embed"
+      className="spotify-player"
+      title="Listen to this artist’s popular songs on Spotify"
       src={src}
-      width={typeof width === "number" ? String(width) : width}
-      height={String(height ?? guessHeight(src))}
-      frameBorder="0"
+      width="100%"
+      height={height}
       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
       loading="lazy"
-      style={{ borderRadius: 12, maxWidth: "100%" }}
     />
   );
 }

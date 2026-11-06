@@ -11,7 +11,7 @@ export default function BackButton() {
       onClick={() => router.push("/")}
       className="p-3 bg-gray-100 text-black rounded-lg hover:bg-gray-200"
     >
-      <Home/>
+      <Home />
     </button>
   );
 }

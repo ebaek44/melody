@@ -1,61 +1,59 @@
-// OrbitDynamic.tsx — dynamic count, Tailwind-only transforms
-import Node from "./node";
-import { Artist } from "@/types";
+"use client";
 import type { CSSProperties } from "react";
+import type { Artist, Neighborhood } from "@/types";
+import Node from "./node";
 
-interface props {
-  center: Artist;
-  orbit?: Artist[];
-  state: string;
-  radius?: string;
-  changeMiddleArtist: (artist: Artist) => void;
-  activeArtist: string;
-}
-
-export default function OrbitDynamic({
-  center,
-  orbit,
-  state = "spread", // 'spread' | 'gather' (you toggle this)
-  radius = "9rem", // ring radius (string like '9rem' or '140px')
-  changeMiddleArtist,
-  activeArtist,
-}: props) {
-  const n = orbit ? Math.max(orbit.length, 1) : 1;
-
+export default function ArtistOrbit({
+  neighborhood,
+  loading,
+  onSelect,
+}: {
+  neighborhood: Neighborhood;
+  loading: boolean;
+  onSelect: (artist: Artist) => void;
+}) {
+  const count = neighborhood.related.length;
+  const points = neighborhood.related.map((artist, i) => {
+    const angle = ((-90 + (i * 360) / Math.max(count, 1)) * Math.PI) / 180;
+    return { artist, x: Math.cos(angle) * 33, y: Math.sin(angle) * 33 };
+  });
   return (
     <div
-      data-state={state}
-      className="relative mx-auto h-[28rem] w-[28rem] select-none group"
-      style={{ "--r": radius } as CSSProperties}
+      className={`graph-stage ${loading ? "is-loading" : ""}`}
+      role="group"
+      aria-label={`Artists connected to ${neighborhood.center.name}`}
+      aria-busy={loading}
     >
-      {center.name && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <Node a={center} />
+      <div className="orbit-ring ring-one" />
+      <div className="orbit-ring ring-two" />
+      <svg className="graph-edges" viewBox="0 0 100 100" aria-hidden="true">
+        {points.map(({ artist, x, y }) => (
+          <path
+            key={artist.name}
+            d={`M 50 50 Q ${50 + x * 0.25 - y * 0.14} ${50 + y * 0.25 + x * 0.14} ${50 + x} ${50 + y}`}
+            strokeWidth={0.17 + (artist.match ?? 0.5) * 0.12}
+          />
+        ))}
+        <circle cx="50" cy="50" r="1" />
+      </svg>
+      <div className="graph-center">
+        <Node a={neighborhood.center} center />
+      </div>
+      {points.map(({ artist, x, y }, i) => (
+        <div
+          key={`${neighborhood.center.name}-${artist.name}`}
+          className="graph-leaf"
+          style={
+            {
+              "--x": `${x}cqw`,
+              "--y": `${y}cqw`,
+              "--delay": `${i * 35}ms`,
+            } as CSSProperties
+          }
+        >
+          <Node a={artist} changeMiddleArtist={onSelect} disabled={loading} />
         </div>
-      )}
-      {orbit &&
-        orbit.map((a, i) => {
-          const angle = (360 / n) * i;
-          const spreadTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(${radius}) rotate(${-angle}deg)`;
-          const gatherTransform = `translate(-50%, -50%) rotate(${angle}deg) translate(0) rotate(${-angle}deg)`;
-
-          return (
-            <div
-              key={i}
-              style={{
-                transform:
-                  state === "spread" ? spreadTransform : gatherTransform,
-              }}
-              className={`
-            absolute left-1/2 top-1/2
-            transition-transform duration-500 ease-out transform-gpu will-change-transform
-            ${a.name === activeArtist ? "z-50" : "z-10"}
-          `}
-            >
-              <Node a={a} changeMiddleArtist={changeMiddleArtist} />
-            </div>
-          );
-        })}
+      ))}
     </div>
   );
 }

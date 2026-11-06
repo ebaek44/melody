@@ -1,224 +1,267 @@
-import React, { useState } from 'react';
-import { Play, Plus, Heart, Share, Music2, Clock } from 'lucide-react';
+"use client";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Bookmark,
+  Check,
+  Compass,
+  Disc3,
+  Headphones,
+  Library,
+  Music2,
+} from "lucide-react";
+import { useState } from "react";
+import { starterArtists } from "@/lib/catalog";
+import { useLibrary } from "./LibraryProvider";
+import ArtistAvatar from "./ArtistAvatar";
+import SaveButton from "./SaveButton";
 
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  duration: string;
-  confidence: number;
-  reason: string;
-  coverUrl?: string;
-}
-
-interface MusicColumn {
-  id: string;
-  title: string;
-  color: string;
-  songs: Song[];
-}
-
-const initialColumns: MusicColumn[] = [
-  {
-    id: 'daily-mix',
-    title: 'Daily Discovery',
-    color: 'primary',
-    songs: [
-      {
-        id: 's1',
-        title: 'Midnight City',
-        artist: 'M83',
-        album: 'Hurry Up, We\'re Dreaming',
-        duration: '4:03',
-        confidence: 96,
-        reason: 'Similar to your electronic favorites'
-      },
-      {
-        id: 's2',
-        title: 'Do I Wanna Know?',
-        artist: 'Arctic Monkeys',
-        album: 'AM',
-        duration: '4:32',
-        confidence: 89,
-        reason: 'Based on your rock preferences'
-      },
-      {
-        id: 's3',
-        title: 'Young Folks',
-        artist: 'Peter Bjorn and John',
-        album: 'Writer\'s Block',
-        duration: '4:38',
-        confidence: 94,
-        reason: 'Matches your indie taste'
-      }
-    ]
-  },
-  {
-    id: 'mood-based',
-    title: 'Focus Vibes',
-    color: 'blue',
-    songs: [
-      {
-        id: 's4',
-        title: 'Weightless',
-        artist: 'Marconi Union',
-        album: 'Ambient Music',
-        duration: '8:08',
-        confidence: 92,
-        reason: 'Perfect for concentration'
-      },
-      {
-        id: 's5',
-        title: 'Svefn-g-englar',
-        artist: 'Sigur Rós',
-        album: 'Ágætis byrjun',
-        duration: '10:04',
-        confidence: 87,
-        reason: 'Ambient and atmospheric'
-      }
-    ]
-  },
-  {
-    id: 'genre-expansion',
-    title: 'Genre Explorer',
-    color: 'purple',
-    songs: [
-      {
-        id: 's6',
-        title: 'Blue Train',
-        artist: 'John Coltrane',
-        album: 'Blue Train',
-        duration: '10:42',
-        confidence: 73,
-        reason: 'Expanding into jazz based on your taste'
-      },
-      {
-        id: 's7',
-        title: 'La Vie En Rose',
-        artist: 'Édith Piaf',
-        album: 'The Voice of the Sparrow',
-        duration: '3:28',
-        confidence: 68,
-        reason: 'French classics recommendation'
-      }
-    ]
-  },
-  {
-    id: 'saved',
-    title: 'Saved for Later',
-    color: 'accent',
-    songs: [
-      {
-        id: 's8',
-        title: 'Bohemian Rhapsody',
-        artist: 'Queen',
-        album: 'A Night at the Opera',
-        duration: '5:55',
-        confidence: 100,
-        reason: 'Added to queue'
-      }
-    ]
-  }
-];
-
-const MusicBoard = () => {
-  const [columns] = useState<MusicColumn[]>(initialColumns);
-  const [playingSong, setPlayingSong] = useState<string | null>(null);
-
-  const handlePlay = (songId: string) => {
-    setPlayingSong(playingSong === songId ? null : songId);
-  };
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 90) return 'text-green-600';
-    if (confidence >= 75) return 'text-yellow-600';
-    return 'text-orange-600';
-  };
-
+export default function MusicBoard() {
+  const { data: session } = useSession();
+  const { items, loading, error, reload } = useLibrary();
+  const [filter, setFilter] = useState("all");
+  const signedIn = !!session?.user?.id;
+  const artists = items.filter((item) => item.kind === "artist");
+  const tracks = items.filter((item) => item.kind === "track");
+  const suggestions = starterArtists
+    .filter((artist) => !artists.some((item) => item.name === artist.name))
+    .slice(0, 3);
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {columns.map(column => (
-        <div
-          key={column.id}
-          className="flex-shrink-0 w-80 bg-card border border-border rounded-lg p-4"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Music2 size={16} className={`text-${column.color}`} />
-              <h3 className="font-medium text-foreground">{column.title}</h3>
-              <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
-                {column.songs.length}
-              </span>
-            </div>
-            <button className="p-1.5 rounded-md hover:bg-muted">
-              <Plus size={16} className="text-muted-foreground" />
-            </button>
+    <section id="library" className="collection-section">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">YOUR SOUND, TAKING SHAPE</span>
+          <h2>
+            {signedIn
+              ? `${session.user.name?.split(" ")[0] || "Your"}’s listening room`
+              : "A home for your next favorites."}
+          </h2>
+          <p>
+            {signedIn
+              ? "The artists and songs you’ve picked up along the way."
+              : "Explore freely. Connect Spotify to start a collection that’s yours."}
+          </p>
+        </div>
+        <Link href="/discover" className="text-link">
+          Keep exploring <ArrowUpRight size={16} />
+        </Link>
+      </div>
+      <div className="dashboard">
+        <aside className="dashboard-sidebar">
+          <div className="sidebar-brand">
+            <span className="mini-logo">
+              <Disc3 size={19} />
+            </span>{" "}
+            Your workspace
           </div>
-
-          <div className="space-y-3">
-            {column.songs.map(song => (
-              <div
-                key={song.id}
-                className="p-3 rounded-lg bg-background border border-border hover:border-border/60 transition-all duration-200 group"
+          <span className="eyebrow sidebar-label">LIBRARY</span>
+          {[
+            ["all", "Overview", Compass],
+            ["artist", "Saved artists", Bookmark],
+            ["track", "Saved songs", Headphones],
+          ].map(([key, label, Icon]) => {
+            const C = Icon as typeof Compass;
+            return (
+              <button
+                key={key as string}
+                className={`sidebar-link ${filter === key ? "selected" : ""}`}
+                onClick={() => setFilter(key as string)}
               >
-                <div className="flex items-start gap-3">
-                  <div className="relative w-12 h-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                    <Music2 size={20} className="text-muted-foreground" />
-                    <button
-                      onClick={() => handlePlay(song.id)}
-                      className="absolute inset-0 bg-black/60 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Play size={16} className="text-white" fill="white" />
-                    </button>
+                <C size={16} />
+                {label as string}
+                {key !== "all" && (
+                  <span>
+                    {key === "artist" ? artists.length : tracks.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <div className="sidebar-note">
+            <span className="status-dot" />
+            <span>
+              {signedIn
+                ? "Your collection, saved to your account."
+                : "Guest mode. Your next discovery is one click away."}
+            </span>
+          </div>
+        </aside>
+        <div className="dashboard-main">
+          <div className="dashboard-title">
+            <div>
+              <span className="eyebrow">
+                {signedIn ? "PERSONAL COLLECTION" : "MAKE YOURSELF AT HOME"}
+              </span>
+              <h3>
+                {filter === "artist"
+                  ? "Your saved artists"
+                  : filter === "track"
+                    ? "Your saved songs"
+                    : "Your music, all connected."}
+              </h3>
+            </div>
+            <span className="collection-count">
+              <Library size={14} />
+              {items.length} saved
+            </span>
+          </div>
+          {error && (
+            <div className="inline-alert" role="alert">
+              {error}
+              <button onClick={reload} className="text-link">
+                Try again
+              </button>
+            </div>
+          )}
+          {loading ? (
+            <div className="board-loading" role="status">
+              Opening your collection…
+            </div>
+          ) : (
+            <div
+              className={`board-columns ${filter !== "all" ? "single-column" : ""}`}
+            >
+              {(filter === "all" || filter === "artist") && (
+                <div className="board-column">
+                  <div className="column-heading">
+                    <span className="column-dot green" />
+                    <h4>Saved artists</h4>
+                    <span>{artists.length}</span>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground truncate text-sm">
-                      {song.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {song.artist}
-                    </p>
-                    <p className="text-xs text-muted-foreground/80 truncate">
-                      {song.album}
-                    </p>
-                    
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock size={10} />
-                        {song.duration}
-                      </span>
-                      <span className={`text-xs font-medium ${getConfidenceColor(song.confidence)}`}>
-                        {song.confidence}% match
-                      </span>
+                  {artists.slice(0, filter === "all" ? 3 : 30).map((item) => (
+                    <div className="library-card" key={item.key}>
+                      <Link
+                        className="library-card-link"
+                        href={`/discover?artist=${encodeURIComponent(item.name)}`}
+                      >
+                        <ArtistAvatar artist={{ ...item }} />
+                        <div>
+                          <strong>{item.name}</strong>
+                          <span>Explore their connections</span>
+                        </div>
+                      </Link>
+                      <SaveButton compact item={item} />
                     </div>
-                    
-                    <p className="text-xs text-muted-foreground/70 mt-1 italic">
-                      {song.reason}
-                    </p>
+                  ))}
+                  {!artists.length && (
+                    <div className="empty-card">
+                      <Bookmark size={24} />
+                      <strong>A good place to start.</strong>
+                      <p>Save an artist from the web and find them here.</p>
+                      <Link href="/discover" className="text-link">
+                        Find an artist <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  )}
+                  {filter === "all" && artists.length > 3 && (
+                    <button
+                      className="text-link"
+                      onClick={() => setFilter("artist")}
+                    >
+                      View all {artists.length} artists <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+              {(filter === "all" || filter === "track") && (
+                <div className="board-column">
+                  <div className="column-heading">
+                    <span className="column-dot amber" />
+                    <h4>Saved songs</h4>
+                    <span>{tracks.length}</span>
                   </div>
-                  
-                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 rounded text-muted-foreground hover:text-foreground">
-                      <Heart size={14} />
+                  {tracks.slice(0, filter === "all" ? 3 : 30).map((item) => (
+                    <div className="library-card" key={item.key}>
+                      <a
+                        className="library-card-link"
+                        href={`https://open.spotify.com/search/${encodeURIComponent(`${item.artist} ${item.name}`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="song-art">
+                          <Music2 size={18} />
+                        </span>
+                        <div>
+                          <strong>{item.name}</strong>
+                          <span>{item.artist}</span>
+                        </div>
+                      </a>
+                      <SaveButton compact item={item} />
+                    </div>
+                  ))}
+                  {!tracks.length && (
+                    <div className="empty-card">
+                      <Headphones size={24} />
+                      <strong>Worth another listen.</strong>
+                      <p>
+                        Keep the songs that catch your ear. They’ll be waiting
+                        here.
+                      </p>
+                      <Link href="/discover" className="text-link">
+                        Find your sound <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  )}
+                  {filter === "all" && tracks.length > 3 && (
+                    <button
+                      className="text-link"
+                      onClick={() => setFilter("track")}
+                    >
+                      View all {tracks.length} songs <ArrowRight size={14} />
                     </button>
-                    <button className="p-1 rounded text-muted-foreground hover:text-foreground">
-                      <Share size={14} />
-                    </button>
+                  )}
+                </div>
+              )}
+              {filter === "all" && (
+                <div className="board-column suggestions-column">
+                  <div className="column-heading">
+                    <span className="column-dot violet" />
+                    <h4>Try a new direction</h4>
+                    <Compass size={14} />
+                  </div>
+                  <p className="column-caption">
+                    A few starting points for a fresh rabbit hole.
+                  </p>
+                  {suggestions.map((artist) => (
+                    <Link
+                      key={artist.name}
+                      className="suggestion-card"
+                      href={`/discover?artist=${encodeURIComponent(artist.name)}`}
+                    >
+                      <ArtistAvatar artist={artist} />
+                      <div>
+                        <strong>{artist.name}</strong>
+                        <span>{artist.genres?.[0]}</span>
+                      </div>
+                      <ArrowUpRight size={16} />
+                    </Link>
+                  ))}
+                  <div className="board-tip">
+                    <Check size={15} />
+                    <span>
+                      {signedIn
+                        ? "A small collection. A very personal soundtrack."
+                        : "No sign-in needed to explore."}
+                    </span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <button className="w-full mt-3 p-2 border border-dashed border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-border/60 transition-colors text-sm">
-            + Add new recommendation
-          </button>
+              )}
+            </div>
+          )}
+          {!signedIn && (
+            <div className="dashboard-connect">
+              <span>
+                <Bookmark size={16} /> Make the discoveries yours.
+              </span>
+              <Link href="/login" className="text-link">
+                Connect Spotify to save <ArrowRight size={15} />
+              </Link>
+            </div>
+          )}
         </div>
-      ))}
-    </div>
+      </div>
+    </section>
   );
-};
-
-export default MusicBoard;
+}

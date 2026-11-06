@@ -1,82 +1,38 @@
-'use server'
+"use server";
+import { getToken } from "next-auth/jwt";
+import { headers } from "next/headers";
+import { mapSpotifyArtist, spotifyRequest } from "@/lib/music";
 
-// this gets a spotify token every hour. need for each api call
-async function getSpotifyToken() {
-    const clientId = process.env.SPOTIFY_CLIENT_ID;
-    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-    
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
-      },
-      body: 'grant_type=client_credentials',
-      cache: 'no-store'
-    });
-    
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(`Failed to get Spotify token: ${JSON.stringify(data)}`);
-    }
-    return data.access_token;
-  }
-
-  
-  export async function fetchArtist(artistId: string) {
-      const accessToken = await getSpotifyToken();
-      const response = await fetch(
-        `https://api.spotify.com/v1/artists/${artistId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }
-      );
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(`Spotify API error: ${data.error?.message || response.statusText}`);
-      }
-      
-      return data;
-  }
-
-
-export async function searchArtist(artistName: string) {
-  const accessToken = await getSpotifyToken();
-  const response = await fetch(
-    `https://api.spotify.com/v1/search/?q=${artistName}&type=artist`,
-    {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    }
-  );
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(`Spotify API error: ${data.error?.message || response.statusText}`);
-  }
-  
-  return data;
+export async function fetchArtist(artistId: string) {
+  if (!/^[a-zA-Z0-9]{22}$/.test(artistId)) throw new Error("Invalid artist");
+  return spotifyRequest(`artists/${artistId}`);
 }
-
-
-export async function getTopArtists(userAccessToken: string) {
-  const response = await fetch(
-  'https://api.spotify.com/v1/me/top/artists?time_range=medium_term&limit=8&offset=5',
-  {
-    headers: {
-      Authorization: `Bearer ${userAccessToken}`, cache: "no-store" 
-    },
+export async function searchArtist(artistName: string) {
+  return spotifyRequest(
+    `search?${new URLSearchParams({ q: artistName.slice(0, 120), type: "artist", limit: "5", market: "US" })}`,
+  );
+}
+// Provider tokens are read only on the server, never supplied by a client action.
+export async function getTopArtists() {
+  const h = await headers();
+  const token = await getToken({
+    req: { headers: { cookie: h.get("cookie") ?? "" } } as Parameters<
+      typeof getToken
+    >[0]["req"],
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+  if (
+    !token?.spotifyAccessToken ||
+    (token.spotifyExpiresAt ?? 0) * 1000 < Date.now()
+  )
+    return [];
+  try {
+    const data = await spotifyRequest(
+      "me/top/artists?time_range=medium_term&limit=6",
+      token.spotifyAccessToken,
+    );
+    return data.items.map(mapSpotifyArtist);
+  } catch {
+    return [];
   }
-);
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(`Spotify API error: ${data.error?.message || response.statusText}`);
-  }
-
-  return data;
 }

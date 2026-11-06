@@ -6,4 +6,32 @@ export type Artist = {
   popularity?: number;
   pfp?: string;
   uri?: string;
+  match?: number;
+  genres?: string[];
+};
+
+export type Track = {
+  name: string;
+  artist: string;
+  url: string;
+  uri?: string;
+};
+
+export type Neighborhood = {
+  center: Artist;
+  related: Artist[];
+  tracks: Track[];
+  source: "lastfm" | "curated";
+  notice?: string;
+};
+
+export type SavedItem = {
+  key: string;
+  kind: "artist" | "track";
+  name: string;
+  artist: string;
+  url: string;
+  uri?: string;
+  pfp?: string;
+  createdAt: number;
 };
