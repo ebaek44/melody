@@ -20,6 +20,8 @@ export type Track = {
 export type Neighborhood = {
   center: Artist;
   related: Artist[];
+  /** Raw provider-ranked candidates, before browser-specific exclusions. */
+  candidates?: Artist[];
   tracks: Track[];
   source: "lastfm" | "curated";
   notice?: string;

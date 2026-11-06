@@ -197,6 +197,54 @@ test(
       assert.equal(fallback.source, "curated");
       assert.equal(fallback.related.length, 6);
       assert.ok(fallback.notice);
+      const excluded = fallback.related[0].name;
+      const filtered = await request("/api/discovery", "POST", undefined, {
+        artist: "Radiohead",
+        exclude: [excluded],
+      });
+      assert.equal(filtered.status, 200);
+      assert.equal(filtered.headers.get("cache-control"), "private, no-store");
+      const filteredData = await filtered.json();
+      assert.ok(
+        !filteredData.related.some(
+          (artist: { name: string }) => artist.name === excluded,
+        ),
+      );
+      assert.equal(filteredData.candidates.length, 6);
+      const exhausted = await request("/api/discovery", "POST", undefined, {
+        artist: "Radiohead",
+        exclude: fallback.related.map(
+          (artist: { name: string }) => artist.name,
+        ),
+      }).then((r) => r.json());
+      assert.deepEqual(exhausted.related, []);
+      const independent = await request("/api/discovery?artist=Radiohead").then(
+        (r) => r.json(),
+      );
+      assert.equal(
+        independent.related.length,
+        6,
+        "One visitor's history does not pollute the shared cache",
+      );
+      assert.equal(
+        (
+          await request("/api/discovery", "POST", undefined, {
+            artist: "Radiohead",
+            exclude: Array(21).fill("A"),
+          })
+        ).status,
+        400,
+      );
+      assert.equal(
+        (
+          await request("/api/discovery", "POST", undefined, {
+            artist: "Radiohead",
+            exclude: ["x".repeat(70_000)],
+          })
+        ).status,
+        413,
+      );
+
       assert.equal(
         (await request("/api/discovery?artist=unknown-musicmap-test-name"))
           .status,

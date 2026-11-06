@@ -2,6 +2,7 @@ import "server-only";
 import type { Artist, Neighborhood, Track } from "@/types";
 import { artistKey, LruCache } from "./cache";
 import { curatedArtists, curatedNeighborhood } from "./catalog";
+import { CANDIDATE_ARTIST_LIMIT, unexploredArtists } from "./discovery";
 
 type SpotifyArtist = {
   id: string;
@@ -112,7 +113,7 @@ export async function resolveArtist(name: string): Promise<Artist> {
   return metadata.set(key, fallback, 60_000);
 }
 
-async function enrichRelated(artists: SimilarArtist[]): Promise<Artist[]> {
+async function enrichRelated(artists: Artist[]): Promise<Artist[]> {
   const result: Artist[] = [];
   // Three requests at a time avoids a burst of catalog calls on every expansion.
   for (let i = 0; i < artists.length; i += 3) {
@@ -120,10 +121,7 @@ async function enrichRelated(artists: SimilarArtist[]): Promise<Artist[]> {
       ...(await Promise.all(
         artists.slice(i, i + 3).map(async (artist) => ({
           ...(await resolveArtist(artist.name)),
-          match:
-            artist.match === undefined
-              ? undefined
-              : Math.max(0, Math.min(1, Number(artist.match))) || undefined,
+          match: artist.match,
         })),
       )),
     );
@@ -131,7 +129,7 @@ async function enrichRelated(artists: SimilarArtist[]): Promise<Artist[]> {
   return result;
 }
 
-export async function discoverArtist(name: string): Promise<Neighborhood> {
+async function loadNeighborhood(name: string): Promise<Neighborhood> {
   const key = artistKey(name);
   const cached = neighborhoods.get(key);
   if (cached) return cached;
@@ -139,7 +137,10 @@ export async function discoverArtist(name: string): Promise<Neighborhood> {
   try {
     return await neighborhoods.remember(key, async () => {
       const [similar, top, center] = await Promise.all([
-        lastfmRequest("artist.getSimilar", { artist: name, limit: "12" }),
+        lastfmRequest("artist.getSimilar", {
+          artist: name,
+          limit: String(CANDIDATE_ARTIST_LIMIT),
+        }),
         lastfmRequest("artist.getTopTracks", {
           artist: name,
           limit: "5",
@@ -156,7 +157,7 @@ export async function discoverArtist(name: string): Promise<Neighborhood> {
           seen.add(id);
           return true;
         })
-        .slice(0, 6);
+        .slice(0, CANDIDATE_ARTIST_LIMIT);
       const tracks: Track[] = (top?.toptracks?.track ?? []).map(
         (track: { name: string; url: string }) => ({
           name: track.name,
@@ -166,7 +167,14 @@ export async function discoverArtist(name: string): Promise<Neighborhood> {
       );
       return {
         center,
-        related: await enrichRelated(distinct),
+        related: distinct.map((artist) => ({
+          name: artist.name,
+          url: `https://www.last.fm/music/${encodeURIComponent(artist.name)}`,
+          match:
+            artist.match === undefined
+              ? undefined
+              : Math.max(0, Math.min(1, Number(artist.match))) || undefined,
+        })),
         tracks,
         source: "lastfm",
         notice: top
@@ -181,6 +189,22 @@ export async function discoverArtist(name: string): Promise<Neighborhood> {
       "We couldn’t load this artist’s connections. Please try again in a moment.",
     );
   }
+}
+
+/** Personal exclusions are applied after the shared candidate cache lookup.
+ * They never enter its key or mutate another visitor's cached neighborhood.
+ */
+export async function discoverArtist(
+  name: string,
+  excluded: readonly string[] = [],
+): Promise<Neighborhood> {
+  const base = await loadNeighborhood(name);
+  const selected = unexploredArtists(base.related, base.center.name, excluded);
+  return {
+    ...base,
+    candidates: base.related,
+    related: await enrichRelated(selected),
+  };
 }
 
 export async function searchArtists(query: string): Promise<Artist[]> {

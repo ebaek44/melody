@@ -67,7 +67,7 @@ Then run `npm run db:setup` and `npm run dev -- --hostname 127.0.0.1`. The appli
 2. Pick a starting point or search for any artist. Search supports arrow keys, Enter, and Escape.
 3. Click a leaf: the web gathers inward, the selected artist becomes the center, and a new neighborhood unfolds.
 4. Listen using the adjacent Spotify artist player. The separate top-song list comes from Last.fm; each song opens Spotify search.
-5. Use the arrows to revisit exact neighborhoods, or copy an artist link.
+5. Use the arrows to revisit your trail, or copy an artist link. The last 20 distinct center artists stay out of suggested leaves; Back/Forward and search still let you return deliberately.
 6. Connect Spotify to create an account. Save an artist or song with the plus button; click the checkmark to remove it.
 7. Open **Your collection** on the home page. The board previews three saved artists and three songs; the sidebar opens larger lists. Suggestions are explicitly editorial starting points, not claimed personalized predictions.
 
@@ -79,12 +79,22 @@ Saving affects the **musicweb account library**, not the user's Spotify follows,
 
 Last.fm similarity results become directed adjacency lists: a center artist plus up to six unique neighbors, carrying the provider's similarity weights. Only the current neighborhood is rendered. SVG edges and responsive radial coordinates avoid a continuous force simulation.
 
-An MST is intentionally unnecessary: the goal is to explore related neighbors, not connect every known artist with a minimum total edge cost. A spanning tree would discard useful relationships and cycles. Graph snapshots preserve the exact center and leaves for back/forward navigation.
+An MST is intentionally unnecessary: the goal is to explore related neighbors, not connect every known artist with a minimum total edge cost. A spanning tree would discard useful relationships and cycles. History snapshots restore the center and cached neighborhood without another request. The displayed leaves are filtered against the current recent-artist window, so history navigation cannot accidentally reintroduce short loops.
+
+### Exploration history and loop prevention
+
+A separate LRU ordered set tracks the **last 20 distinct center artists**. Successful exploration, Back/Forward, and browser-history traversal promote the center to most recent. Failed or superseded requests do not record a visit. A new exploration branch retains recency from the discarded forward branch.
+
+The window uses normalized names, O(1) membership/promotion/eviction, and per-tab session storage, so a refresh retains the recent exclusions. Storage failures or malformed values do not prevent discovery. This is a bounded cooldown, not a permanent ban: older artists can become suggestions again after leaving the 20-artist window, and deliberate revisits through search/history remain available throughout.
+
+The server caches up to 36 ranked candidate artists per center. It applies each request's exclusion list **after** the shared cache lookup and enriches only the six visible leaves with Spotify metadata. The browser sends exclusions in a bounded JSON POST body rather than putting the trail in URLs. Personalized responses are private/no-store; one visitor's recent set never mutates the shared candidate cache.
+
+The bounded 50-visit navigation trail has stable visit IDs, so browser Back/Forward remains correct after trimming or branching, including repeat artist visits. Returning to a cached visit filters its leaves without another API call. If its original leaves are mostly visited but unseen candidates remain, **Find fresh connections** refills from the server cache without adding a duplicate history entry. Exhausted neighborhoods stay empty with guidance to search or go back; recent artists are never silently added to fill the ring.
 
 ### Caching and request efficiency
 
 - Server LRU caches are bounded Maps: promotion and eviction are O(1).
-- Artist neighborhoods: 150 entries, one-hour TTL.
+- Artist candidate neighborhoods: 150 entries, one-hour TTL; up to 36 candidates each, with only six eligible leaves enriched/rendered.
 - Spotify metadata: 500 entries, six-hour TTL; incomplete fallback metadata expires after one minute.
 - Artist search: 100 entries, ten-minute TTL.
 - Client graph snapshots: 80 entries, fifteen-minute TTL.
@@ -124,9 +134,9 @@ npm run build
 npm run test:integration
 ```
 
-Core tests cover LRU recency, TTL, coalescing, failure retries, cyclic graph neighborhoods, library validation, trusted embeds, Postgres configuration/TLS, actual SQL execution, persistence across connection pools, deduplication, and account isolation.
+Core tests cover cache expiry/coalescing, 20-artist recency, history trimming and branching, repeat visit IDs, deliberate revisits, pool refill/exhaustion, storage restoration, per-request exclusion validation, library validation, trusted embeds, Postgres configuration/TLS, SQL execution, persistence across connection pools, deduplication, and account isolation.
 
-The integration test starts an isolated PostgreSQL SQL engine with a TCP endpoint, then runs the **production build** on port 3107 against it through the real `pg` driver. It uses synthetic test sessions, disabled external music API credentials, and an isolated test secret. It verifies authenticated saves/removals, ownership, CSRF rejection, token privacy, guest routes, outage fallbacks, and persistence after the application process is stopped and restarted. It also verifies that missing database configuration returns HTTP 503 while guest exploration still loads.
+The integration test starts an isolated PostgreSQL SQL engine with a TCP endpoint, then runs the **production build** on port 3107 against it through the real `pg` driver. It uses synthetic test sessions, disabled external music API credentials, and an isolated test secret. It verifies authenticated saves/removals, ownership, CSRF rejection, token privacy, guest routes, outage fallbacks, and persistence after the application process is stopped and restarted. It also verifies that missing database configuration returns HTTP 503 while guest exploration still loads, and that private exclusion requests never contaminate shared discovery data.
 
 Tests never use your hosted database or provider accounts, and do not complete real Spotify OAuth. They verify the production code path locally; a live Vercel/Neon deployment still needs its own connection and OAuth smoke test. Run integration tests after building, while no development server is changing the same `.next` directory.
 

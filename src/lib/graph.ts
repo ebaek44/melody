@@ -3,7 +3,7 @@ import { artistKey, LruCache } from "./cache";
 
 /** Directed, weighted adjacency lists: one center and its strongest neighbors.
  * No global layout simulation or MST recomputation on navigation.
- * A bounded snapshot cache makes back/forward exact and repeat visits instant.
+ * Raw snapshots stay independent of the recent-artist filter and navigation trail.
  */
 export class ArtistGraph {
   private neighborhoods = new LruCache<Neighborhood>(80, 15 * 60 * 1000);

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint src tests scripts next.config.ts --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node --conditions=react-server --import tsx --test tests/core.test.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/core.test.ts tests/discovery.test.ts",
     "test:integration": "node --import tsx --test tests/integration.test.ts",
     "format:check": "prettier --check src tests scripts next.config.ts",
     "format": "prettier --write src tests scripts next.config.ts",

@@ -17,7 +17,12 @@ import {
 } from "lucide-react";
 import type { Artist, Neighborhood } from "@/types";
 import { ArtistGraph } from "@/lib/graph";
-import { artistKey } from "@/lib/cache";
+import {
+  DiscoveryJourney,
+  needsFreshConnections,
+  RECENT_ARTISTS_STORAGE_KEY,
+  type JourneyState,
+} from "@/lib/discovery";
 import { starterArtists } from "@/lib/catalog";
 import ArtistOrbit from "./NodeMapAnimation";
 import SearchBar from "../ui/SearchBar";
@@ -26,7 +31,6 @@ import SaveButton from "../SaveButton";
 import ArtistAvatar from "../ArtistAvatar";
 import { useLibrary } from "../LibraryProvider";
 
-type History = { entries: Neighborhood[]; index: number };
 export default function NodeMap({
   initialArtist,
   topArtists = [],
@@ -37,17 +41,40 @@ export default function NodeMap({
   const { data: session } = useSession();
   const { error: libraryError } = useLibrary();
   const graph = useRef(new ArtistGraph());
+  const journey = useRef(new DiscoveryJourney());
   const [current, setCurrent] = useState<Neighborhood | null>(null);
   const [loading, setLoading] = useState(true);
   const [target, setTarget] = useState(initialArtist);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [history, setHistory] = useState<History>({ entries: [], index: -1 });
-  const historyRef = useRef(history);
+  const [history, setHistory] = useState({ index: -1, length: 0 });
   const request = useRef<AbortController | null>(null);
   const sequence = useRef(0);
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialized = useRef(false);
+
+  const applyJourney = useCallback(
+    (state: JourneyState, mode: "push" | "replace" | "pop") => {
+      setCurrent(state.neighborhood);
+      setHistory({ index: state.index, length: state.length });
+      try {
+        sessionStorage.setItem(
+          RECENT_ARTISTS_STORAGE_KEY,
+          JSON.stringify(journey.current.recent.names),
+        );
+      } catch {
+        /* Storage restrictions never block discovery. */
+      }
+      const name = state.neighborhood.center.name;
+      const url = `/discover?artist=${encodeURIComponent(name)}`;
+      if (mode === "push" && !state.repeated)
+        window.history.pushState({ musicwebVisit: state.visitId }, "", url);
+      else if (mode !== "pop")
+        window.history.replaceState({ musicwebVisit: state.visitId }, "", url);
+      document.title = `${name} · Discover · musicweb.`;
+    },
+    [],
+  );
 
   const navigate = useCallback(
     async (name: string, mode: "push" | "replace" | "pop" = "push") => {
@@ -58,17 +85,33 @@ export default function NodeMap({
       setLoading(true);
       setError("");
       setTarget(name);
+      if (mode === "pop") {
+        const restored = journey.current.restore(
+          name,
+          window.history.state?.musicwebVisit,
+        );
+        if (restored) {
+          applyJourney(restored, "pop");
+          setLoading(false);
+          return;
+        }
+      }
       try {
+        const recent = journey.current.recent;
         const cached = graph.current.get(name);
-        const dataRequest = cached
-          ? Promise.resolve(cached)
-          : fetch(`/api/discovery?artist=${encodeURIComponent(name)}`, {
-              signal: controller.signal,
-            }).then(async (response) => {
-              const data = await response.json();
-              if (!response.ok) throw new Error(data.error);
-              return data as Neighborhood;
-            });
+        const dataRequest =
+          cached && !needsFreshConnections(cached, recent)
+            ? Promise.resolve(cached)
+            : fetch("/api/discovery", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ artist: name, exclude: recent.names }),
+                signal: controller.signal,
+              }).then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                return data as Neighborhood;
+              });
         const [data] = await Promise.all([
           dataRequest,
           new Promise((resolve) =>
@@ -82,53 +125,7 @@ export default function NodeMap({
         ]);
         if (seq !== sequence.current || controller.signal.aborted) return;
         graph.current.add(data);
-        setCurrent(data);
-        const prior = historyRef.current;
-        const repeated =
-          prior.entries[prior.index] &&
-          artistKey(prior.entries[prior.index].center.name) ===
-            artistKey(data.center.name);
-        let next: History;
-        if (mode === "pop") {
-          const stateIndex = window.history.state?.musicmapIndex;
-          const index =
-            Number.isInteger(stateIndex) &&
-            prior.entries[stateIndex] &&
-            artistKey(prior.entries[stateIndex].center.name) ===
-              artistKey(data.center.name)
-              ? stateIndex
-              : prior.entries.findLastIndex(
-                  (entry) =>
-                    artistKey(entry.center.name) ===
-                    artistKey(data.center.name),
-                );
-          next =
-            index >= 0 ? { ...prior, index } : { entries: [data], index: 0 };
-        } else if (mode === "replace" || repeated) {
-          next =
-            prior.index < 0
-              ? { entries: [data], index: 0 }
-              : {
-                  ...prior,
-                  entries: prior.entries.map((entry, i) =>
-                    i === prior.index ? data : entry,
-                  ),
-                };
-        } else {
-          const entries = [
-            ...prior.entries.slice(0, prior.index + 1),
-            data,
-          ].slice(-50);
-          next = { entries, index: entries.length - 1 };
-        }
-        historyRef.current = next;
-        setHistory(next);
-        const url = `/discover?artist=${encodeURIComponent(data.center.name)}`;
-        if (mode === "push" && !repeated)
-          window.history.pushState({ musicmapIndex: next.index }, "", url);
-        else if (mode !== "pop")
-          window.history.replaceState({ musicmapIndex: next.index }, "", url);
-        document.title = `${data.center.name} · Discover · musicweb.`;
+        applyJourney(journey.current.commit(data, mode), mode);
       } catch (error) {
         if (seq === sequence.current && !controller.signal.aborted)
           setError(
@@ -141,17 +138,23 @@ export default function NodeMap({
           setLoading(false);
       }
     },
-    [],
+    [applyJourney],
   );
 
   useEffect(() => {
     if (!initialized.current) {
       initialized.current = true;
+      try {
+        const saved = sessionStorage.getItem(RECENT_ARTISTS_STORAGE_KEY);
+        if (saved && saved.length <= 16_000)
+          journey.current.recent.restore(JSON.parse(saved));
+      } catch {
+        /* Ignore unavailable or malformed per-tab storage. */
+      }
+      void navigate(initialArtist, "replace");
+    } else if (request.current?.signal.aborted) {
       void navigate(initialArtist, "replace");
     }
-    // React Strict Mode remounts effects; restart an aborted initial request.
-    else if (request.current?.signal.aborted)
-      void navigate(initialArtist, "replace");
     function pop() {
       const name =
         new URLSearchParams(window.location.search).get("artist") ||
@@ -173,24 +176,14 @@ export default function NodeMap({
   );
 
   function moveHistory(offset: number) {
-    const prior = historyRef.current;
-    const index = prior.index + offset;
-    if (index < 0 || index >= prior.entries.length) return;
+    const restored = journey.current.move(offset);
+    if (!restored) return;
     request.current?.abort();
     ++sequence.current;
-    const data = prior.entries[index];
-    setCurrent(data);
     setLoading(false);
     setError("");
-    const next = { ...prior, index };
-    historyRef.current = next;
-    setHistory(next);
-    window.history.pushState(
-      { musicmapIndex: index },
-      "",
-      `/discover?artist=${encodeURIComponent(data.center.name)}`,
-    );
-    document.title = `${data.center.name} · Discover · musicweb.`;
+    setTarget(restored.neighborhood.center.name);
+    applyJourney(restored, "push");
   }
   async function share() {
     try {
@@ -202,6 +195,10 @@ export default function NodeMap({
       setError("Copy the page address from your browser to share this artist.");
     }
   }
+  const canFindFresh =
+    !!current &&
+    current.related.length < 6 &&
+    needsFreshConnections(current, journey.current.recent);
   const seeds = topArtists.length ? topArtists.slice(0, 4) : starterArtists;
   return (
     <main className="discovery-page">
@@ -276,9 +273,7 @@ export default function NodeMap({
               <button
                 className="icon-button"
                 aria-label="Next artist"
-                disabled={
-                  history.index >= history.entries.length - 1 || loading
-                }
+                disabled={history.index >= history.length - 1 || loading}
                 onClick={() => moveHistory(1)}
               >
                 <ArrowRight size={17} />
@@ -324,6 +319,13 @@ export default function NodeMap({
                   <Loader2 size={14} className="spin" /> Finding connections for{" "}
                   {target}…
                 </>
+              ) : canFindFresh ? (
+                <button
+                  className="text-link"
+                  onClick={() => void navigate(current!.center.name, "replace")}
+                >
+                  <RotateCcw size={14} /> Find fresh connections
+                </button>
               ) : current?.related.length ? (
                 <>
                   <span className="status-dot" /> Click any artist to unfold
@@ -331,8 +333,8 @@ export default function NodeMap({
                 </>
               ) : current ? (
                 <>
-                  No related artists found. Search for another artist to keep
-                  exploring.
+                  No fresh connections here. Search for another artist or use
+                  Back to revisit your trail.
                 </>
               ) : (
                 <>Choose a starting point above.</>
